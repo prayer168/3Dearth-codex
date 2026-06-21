@@ -316,6 +316,26 @@ feat: add biological sound guessing game
 fix: improve biological sound volume
 ```
 
+## 原理與應用頁互動動畫
+
+使用者要求把「原理與應用」頁(第 6 頁)做成互動動畫。
+
+完成內容：
+
+- 三張概念卡由靜態 SVG 改為即時 Canvas 互動動畫，由 `conceptDemoMarkup` / `initInteractiveConcepts` / `drawConceptDemo` 處理。
+  - 頻率決定音高：滑桿(80–1200 Hz)即時改變行進波密度與顏色，附「試聽」鈕。
+  - 振幅影響音量：滑桿(0–100%)改變波形高度，畫出振幅上下界，附「試聽」鈕。
+  - 頻譜像聲音指紋：會跳動的等化器，可切換 低音鼓／人聲／鳥鳴／白噪音 四種頻譜輪廓。
+- 試聽用 `playDemoTone`(振盪器 + 壓縮器 + 包絡)。
+- 動畫只在該頁可見時繪製(`canvas.offsetParent` 判斷)。
+- 「生活應用」的六張卡仍為靜態 SVG。
+
+相關提交：
+
+```bash
+feat: turn principle cards into interactive animations
+```
+
 ## 目前重要檔案
 
 - `index.html`：網站頁籤與主要介面
