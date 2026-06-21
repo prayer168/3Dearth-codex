@@ -20,6 +20,7 @@ let mediaAnalyser;
 let mediaConnected = false;
 let mediaMode = "idle";
 let capturedAudioStream;
+let loadedMediaUrl = "";
 let challengeAnswer = null;
 let quietStart = null;
 let quietGameActive = false;
@@ -423,24 +424,9 @@ function connectMediaAnalysis(source, context) {
   }
 }
 
-document.querySelector("#mediaFile").addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    resetMediaAnalysis();
-    stopCapturedAudio();
-    youtubeEmbed.hidden = true;
-    youtubeEmbed.innerHTML = "";
-    youtubeFallback.hidden = true;
-    youtubeFallback.innerHTML = "";
-    mediaPlayer.hidden = false;
-    mediaMode = "direct";
-    mediaPlayer.src = URL.createObjectURL(file);
-    mediaStatus.textContent = "已載入本機媒體檔，按播放後會產生動態音頻圖。";
-  }
-});
-document.querySelector("#loadUrl").addEventListener("click", () => {
-  const url = document.querySelector("#mediaUrl").value.trim();
-  if (!url) return;
+function loadMediaUrl(url) {
+  if (!url) return "empty";
+  loadedMediaUrl = url;
   resetMediaAnalysis();
   stopCapturedAudio();
   const youtubeId = getYouTubeId(url);
@@ -452,12 +438,12 @@ document.querySelector("#loadUrl").addEventListener("click", () => {
     mediaPlayer.hidden = true;
     mediaMode = "youtube";
     youtubeFallback.hidden = false;
-    youtubeFallback.innerHTML = `<strong>YouTube 連結</strong><p class="hint">若下方播放器顯示無法載入，請直接開啟 YouTube 原頁播放，再回到本頁按「分析 YouTube 聲音」產生音頻圖。</p><a href="${safeYouTubeUrl}" target="_blank" rel="noreferrer">在 YouTube 開啟</a>`;
+    youtubeFallback.innerHTML = `<strong>YouTube 連結</strong><p class="hint">YouTube 不能被網頁直接讀取聲音。按「播放」或「分析 YouTube 聲音」後，請在 Chrome 分享視窗選擇播放中的 YouTube 分頁並勾選分頁音訊。</p><a href="${safeYouTubeUrl}" target="_blank" rel="noreferrer">在 YouTube 開啟</a>`;
     youtubeEmbed.hidden = false;
     youtubeEmbed.innerHTML = `<iframe title="YouTube 播放器" src="https://www.youtube.com/embed/${youtubeId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-    mediaStatus.textContent = "YouTube 可播放但不能直接被網頁分析。若要音頻圖，請讓 YouTube 播放後按「分析 YouTube 聲音」。";
-    drawIdle(canvases.media, ctxs.media, "請用擷取分頁音訊分析 YouTube");
-    return;
+    mediaStatus.textContent = "已載入 YouTube。按「播放」會開啟 Chrome 分頁音訊擷取視窗；選擇 YouTube 分頁並勾選分頁音訊後，就會產生音頻圖。";
+    drawIdle(canvases.media, ctxs.media, "按播放後選擇 YouTube 分頁音訊");
+    return "youtube";
   }
   youtubeEmbed.hidden = true;
   youtubeEmbed.innerHTML = "";
@@ -467,11 +453,75 @@ document.querySelector("#loadUrl").addEventListener("click", () => {
   mediaMode = "direct";
   mediaPlayer.src = url;
   mediaStatus.textContent = "已載入直接媒體網址，按播放後會產生動態音頻圖。若仍無法播放，來源網站可能封鎖跨站串流。";
+  return "direct";
+}
+
+async function captureTabAudio() {
+  const context = await ensureAudio();
+  stopCapturedAudio();
+  capturedAudioStream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: true
+  });
+  const hasAudio = capturedAudioStream.getAudioTracks().length > 0;
+  if (!hasAudio) {
+    capturedAudioStream.getTracks().forEach((track) => track.stop());
+    capturedAudioStream = null;
+    mediaStatus.textContent = "沒有擷取到分頁音訊。請在 Chrome 分享視窗選擇分頁，並勾選「分享分頁音訊」。";
+    return;
+  }
+  const streamSource = context.createMediaStreamSource(capturedAudioStream);
+  connectMediaAnalysis(streamSource, context);
+  mediaMode = "capture";
+  mediaStatus.textContent = "正在分析 YouTube/分頁音訊。請確認影片正在播放，且分享時有勾選分頁音訊。";
+  capturedAudioStream.getVideoTracks().forEach((track) => {
+    track.addEventListener("ended", () => {
+      mediaMode = "idle";
+      mediaStatus.textContent = "分頁音訊擷取已停止。";
+    });
+  });
+}
+
+document.querySelector("#mediaFile").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    resetMediaAnalysis();
+    stopCapturedAudio();
+    youtubeEmbed.hidden = true;
+    youtubeEmbed.innerHTML = "";
+    youtubeFallback.hidden = true;
+    youtubeFallback.innerHTML = "";
+    mediaPlayer.hidden = false;
+    mediaMode = "direct";
+    loadedMediaUrl = "";
+    mediaPlayer.src = URL.createObjectURL(file);
+    mediaStatus.textContent = "已載入本機媒體檔，按播放後會產生動態音頻圖。";
+  }
+});
+document.querySelector("#loadUrl").addEventListener("click", () => {
+  const url = document.querySelector("#mediaUrl").value.trim();
+  loadMediaUrl(url);
 });
 document.querySelector("#playMedia").addEventListener("click", async () => {
-  if (mediaPlayer.hidden || !mediaPlayer.currentSrc) {
-    mediaStatus.textContent = "目前沒有可分析的直接媒體檔。YouTube 連結請在嵌入播放器中播放；若要音頻圖，請選本機音訊/影片或直接媒體檔網址。";
+  const url = document.querySelector("#mediaUrl").value.trim();
+  if (url && (url !== loadedMediaUrl || (mediaMode !== "direct" && mediaMode !== "youtube"))) {
+    loadMediaUrl(url);
+  }
+  if (mediaMode === "youtube") {
+    mediaStatus.textContent = "正在開啟分頁音訊擷取。請選擇播放 YouTube 的分頁，並勾選「分享分頁音訊」。";
+    try {
+      await captureTabAudio();
+    } catch (error) {
+      mediaStatus.textContent = `無法分析 YouTube 聲音：${error.message}`;
+    }
     return;
+  }
+  if (mediaPlayer.hidden || !mediaPlayer.currentSrc) {
+    if (url) loadMediaUrl(url);
+    if (mediaPlayer.hidden || !mediaPlayer.currentSrc) {
+      mediaStatus.textContent = "目前沒有可分析的媒體。請貼上直接媒體網址，或貼 YouTube 後按播放並選擇分頁音訊。";
+      return;
+    }
   }
   const context = await ensureAudio();
   if (!mediaElementSource) {
@@ -490,29 +540,7 @@ document.querySelector("#pauseMedia").addEventListener("click", () => {
 });
 document.querySelector("#captureTabAudio").addEventListener("click", async () => {
   try {
-    const context = await ensureAudio();
-    stopCapturedAudio();
-    capturedAudioStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: true
-    });
-    const hasAudio = capturedAudioStream.getAudioTracks().length > 0;
-    if (!hasAudio) {
-      capturedAudioStream.getTracks().forEach((track) => track.stop());
-      capturedAudioStream = null;
-      mediaStatus.textContent = "沒有擷取到分頁音訊。請在 Chrome 分享視窗選擇分頁，並勾選「分享分頁音訊」。";
-      return;
-    }
-    const streamSource = context.createMediaStreamSource(capturedAudioStream);
-    connectMediaAnalysis(streamSource, context);
-    mediaMode = "capture";
-    mediaStatus.textContent = "正在分析 YouTube/分頁音訊。請確認影片正在播放，且分享時有勾選分頁音訊。";
-    capturedAudioStream.getVideoTracks().forEach((track) => {
-      track.addEventListener("ended", () => {
-        mediaMode = "idle";
-        mediaStatus.textContent = "分頁音訊擷取已停止。";
-      });
-    });
+    await captureTabAudio();
   } catch (error) {
     mediaStatus.textContent = `無法擷取分頁音訊：${error.message}`;
   }
@@ -520,7 +548,7 @@ document.querySelector("#captureTabAudio").addEventListener("click", async () =>
 
 function animateMedia() {
   if (mediaMode === "youtube") {
-    drawIdle(canvases.media, ctxs.media, "請用擷取分頁音訊分析 YouTube");
+    drawIdle(canvases.media, ctxs.media, "按播放後選擇 YouTube 分頁音訊");
   } else if ((mediaMode === "direct" || mediaMode === "capture") && mediaAnalyser) {
     const result = drawSpectrum(canvases.media, ctxs.media, mediaAnalyser, "media");
     document.querySelector("#beatEnergy").textContent = result.lowEnergy > 22000 ? "強" : result.lowEnergy > 9000 ? "中" : "弱";
