@@ -109,6 +109,13 @@
           <article class="control-panel">
             <h2>麥克風即時音頻圖</h2>
             <p>允許瀏覽器使用麥克風後，可以看到環境聲的頻率分布與估計分貝。</p>
+            <label for="micDevice">輸入裝置</label>
+            <div class="inline-control">
+              <select id="micDevice" aria-label="選擇麥克風">
+                <option value="">瀏覽器預設麥克風</option>
+              </select>
+              <button id="refreshMicDevices">重新偵測</button>
+            </div>
             <div class="button-row">
               <button id="startMic" class="primary-action">開啟麥克風</button>
               <button id="stopMic">停止</button>

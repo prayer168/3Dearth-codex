@@ -12,6 +12,7 @@ let sweepTimer;
 let micStream;
 let micSource;
 let micGain;
+let micMonitorGain;
 let micAnalyser;
 let mediaSource;
 let mediaAnalyser;
@@ -27,6 +28,7 @@ const canvases = {
 };
 
 const ctxs = Object.fromEntries(Object.entries(canvases).map(([key, canvas]) => [key, canvas.getContext("2d")]));
+const micDeviceSelect = document.querySelector("#micDevice");
 
 async function ensureAudio() {
   if (!audioContext) {
@@ -187,6 +189,29 @@ function rmsToDb(data) {
   return Math.max(0, Math.min(100, 20 * Math.log10(rms || 0.00001) + 100));
 }
 
+async function loadMicDevices() {
+  if (!navigator.mediaDevices?.enumerateDevices) {
+    document.querySelector("#micStatus").textContent = "這個瀏覽器不支援麥克風裝置列表。";
+    return;
+  }
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const audioInputs = devices.filter((device) => device.kind === "audioinput");
+  const previous = micDeviceSelect.value;
+  micDeviceSelect.innerHTML = '<option value="">瀏覽器預設麥克風</option>';
+  audioInputs.forEach((device, index) => {
+    const option = document.createElement("option");
+    option.value = device.deviceId;
+    option.textContent = device.label || `麥克風 ${index + 1}`;
+    micDeviceSelect.append(option);
+  });
+  if ([...micDeviceSelect.options].some((option) => option.value === previous)) {
+    micDeviceSelect.value = previous;
+  }
+  document.querySelector("#micStatus").textContent = audioInputs.length
+    ? `偵測到 ${audioInputs.length} 個輸入裝置，請選一個再開啟麥克風。`
+    : "沒有偵測到麥克風輸入裝置。";
+}
+
 function getWaveStats(data) {
   let min = 255;
   let max = 0;
@@ -257,24 +282,25 @@ function drawSpectrum(canvas, ctx, analyser, mode = "bars") {
 async function startMic() {
   const context = await ensureAudio();
   if (micStream) stopMic();
-  micStream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false
-    }
-  });
+  const deviceId = micDeviceSelect.value;
+  const audioConstraints = deviceId ? { deviceId: { exact: deviceId } } : true;
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
   micSource = context.createMediaStreamSource(micStream);
   micGain = context.createGain();
   micGain.gain.value = Number(document.querySelector("#micSensitivity").value);
+  micMonitorGain = context.createGain();
+  micMonitorGain.gain.value = 0;
   micAnalyser = context.createAnalyser();
-  micAnalyser.fftSize = 2048;
-  micAnalyser.minDecibels = -100;
-  micAnalyser.maxDecibels = -12;
-  micAnalyser.smoothingTimeConstant = 0.72;
-  micSource.connect(micGain).connect(micAnalyser);
+  micAnalyser.fftSize = 4096;
+  micAnalyser.minDecibels = -110;
+  micAnalyser.maxDecibels = -10;
+  micAnalyser.smoothingTimeConstant = 0.55;
+  micSource.connect(micGain);
+  micGain.connect(micAnalyser);
+  micGain.connect(micMonitorGain).connect(context.destination);
   const track = micStream.getAudioTracks()[0];
   const label = track?.label ? `裝置：${track.label}。` : "";
+  await loadMicDevices();
   document.querySelector("#micStatus").textContent = `麥克風已啟用，AudioContext：${context.state}。${label}請調整靈敏度並說話或拍手。`;
 }
 
@@ -285,6 +311,7 @@ function stopMic() {
   micStream = null;
   micSource = null;
   micGain = null;
+  micMonitorGain = null;
   micAnalyser = null;
   document.querySelector("#micStatus").textContent = "麥克風已停止。";
 }
@@ -297,6 +324,21 @@ document.querySelector("#startMic").addEventListener("click", async () => {
   }
 });
 document.querySelector("#stopMic").addEventListener("click", stopMic);
+document.querySelector("#refreshMicDevices").addEventListener("click", async () => {
+  try {
+    await loadMicDevices();
+  } catch (error) {
+    document.querySelector("#micStatus").textContent = `無法偵測麥克風：${error.message}`;
+  }
+});
+micDeviceSelect.addEventListener("change", async () => {
+  if (!micStream) return;
+  try {
+    await startMic();
+  } catch (error) {
+    document.querySelector("#micStatus").textContent = `切換麥克風失敗：${error.message}`;
+  }
+});
 document.querySelector("#micSensitivity").addEventListener("input", (event) => {
   if (micGain && audioContext) {
     micGain.gain.setTargetAtTime(Number(event.target.value), audioContext.currentTime, 0.03);
@@ -311,7 +353,8 @@ function animateMic() {
     document.querySelector("#dbFill").style.height = `${result.db}%`;
     document.querySelector("#soundState").textContent = result.waveStats.peakToPeak <= 2 ? "未收到訊號" : result.db < 35 ? "安靜" : result.db < 68 ? "一般聲音" : "偏大聲";
     if (result.waveStats.peakToPeak <= 2) {
-      document.querySelector("#micStatus").textContent = "麥克風已開啟，但目前收到的輸入是靜音。請確認 Chrome 右上角麥克風來源、Windows 輸入音量，或把靈敏度拉高後拍手測試。";
+      const selectedLabel = micDeviceSelect.selectedOptions[0]?.textContent || "目前裝置";
+      document.querySelector("#micStatus").textContent = `${selectedLabel} 已開啟，但目前收到靜音。請從「輸入裝置」改選其他麥克風，或檢查 Windows 輸入音量是否有跳動。`;
     }
     updateQuietGame(result.db);
   } else if (!micAnalyser) {
@@ -493,6 +536,7 @@ document.querySelector("#resetQuiz").addEventListener("click", () => {
 });
 
 loadContent();
+loadMicDevices().catch(() => {});
 updateProgress();
 drawToneWave();
 animateMic();
