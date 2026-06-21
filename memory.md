@@ -328,7 +328,7 @@ fix: improve biological sound volume
   - 頻譜像聲音指紋：會跳動的等化器，可切換 低音鼓／人聲／鳥鳴／白噪音 四種頻譜輪廓。
 - 試聽用 `playDemoTone`(振盪器 + 壓縮器 + 包絡)。
 - 動畫只在該頁可見時繪製(`canvas.offsetParent` 判斷)。
-- 「生活應用」的六張卡仍為靜態 SVG。
+- 「生活應用」六張卡（調音叉、噪音計、語音波形、音樂視覺化、超音波、隔音）已改為 SVG 動畫：`miniSvg` 內元件加上 class，由 `css/style.css` 的 `@keyframes` 驅動（fork 振動、噪音計量條、語音 dash 行進、視覺化環/柱跳動、超音波 sonar 脈衝、隔音入射波衰減），並包在 `@media (prefers-reduced-motion: no-preference)` 內。
 
 相關提交：
 
