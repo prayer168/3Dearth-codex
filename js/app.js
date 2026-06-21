@@ -452,10 +452,10 @@ document.querySelector("#loadUrl").addEventListener("click", () => {
     mediaPlayer.hidden = true;
     mediaMode = "youtube";
     youtubeFallback.hidden = false;
-    youtubeFallback.innerHTML = `<strong>YouTube 連結</strong><p class="hint">若下方播放器顯示無法載入，請直接開啟 YouTube 原頁播放，再按「擷取分頁音訊」產生音頻圖。</p><a href="${safeYouTubeUrl}" target="_blank" rel="noreferrer">在 YouTube 開啟</a>`;
+    youtubeFallback.innerHTML = `<strong>YouTube 連結</strong><p class="hint">若下方播放器顯示無法載入，請直接開啟 YouTube 原頁播放，再回到本頁按「分析 YouTube 聲音」產生音頻圖。</p><a href="${safeYouTubeUrl}" target="_blank" rel="noreferrer">在 YouTube 開啟</a>`;
     youtubeEmbed.hidden = false;
     youtubeEmbed.innerHTML = `<iframe title="YouTube 播放器" src="https://www.youtube.com/embed/${youtubeId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-    mediaStatus.textContent = "YouTube 可能因影片或瀏覽器限制而無法嵌入載入。若要音頻圖，請播放 YouTube 後按「擷取分頁音訊」。";
+    mediaStatus.textContent = "YouTube 可播放但不能直接被網頁分析。若要音頻圖，請讓 YouTube 播放後按「分析 YouTube 聲音」。";
     drawIdle(canvases.media, ctxs.media, "請用擷取分頁音訊分析 YouTube");
     return;
   }
@@ -506,7 +506,7 @@ document.querySelector("#captureTabAudio").addEventListener("click", async () =>
     const streamSource = context.createMediaStreamSource(capturedAudioStream);
     connectMediaAnalysis(streamSource, context);
     mediaMode = "capture";
-    mediaStatus.textContent = "正在分析擷取到的分頁音訊。若是 YouTube，請確認影片正在播放，且分享時有勾選分頁音訊。";
+    mediaStatus.textContent = "正在分析 YouTube/分頁音訊。請確認影片正在播放，且分享時有勾選分頁音訊。";
     capturedAudioStream.getVideoTracks().forEach((track) => {
       track.addEventListener("ended", () => {
         mediaMode = "idle";
