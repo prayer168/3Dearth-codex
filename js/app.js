@@ -570,12 +570,21 @@ function playChallengeTone(frequency) {
   ensureAudio().then((context) => {
     const osc = context.createOscillator();
     const gain = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    const baseVolume = Number(document.querySelector("#challengeVolume")?.value || 0.28);
+    const compensation = frequency < 180 ? 1.45 : frequency > 7000 ? 1.3 : 1;
+    const volume = Math.min(0.72, baseVolume * compensation);
     osc.frequency.value = frequency;
     osc.type = "triangle";
+    compressor.threshold.value = -16;
+    compressor.knee.value = 18;
+    compressor.ratio.value = 7;
+    compressor.attack.value = 0.004;
+    compressor.release.value = 0.16;
     gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.04);
+    gain.gain.exponentialRampToValueAtTime(volume, context.currentTime + 0.04);
     gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 1.2);
-    osc.connect(gain).connect(context.destination);
+    osc.connect(gain).connect(compressor).connect(context.destination);
     osc.start();
     osc.stop(context.currentTime + 1.25);
   });
