@@ -714,7 +714,7 @@ function speakBioHint(id) {
   setTimeout(() => window.speechSynthesis.speak(utterance), 130);
 }
 
-async function playBiologicalSound(id) {
+async function synthBiologicalSound(id) {
   const context = await ensureAudio();
   const now = context.currentTime + 0.04;
   const master = context.createGain();
@@ -804,6 +804,65 @@ async function playBiologicalSound(id) {
   speakBioHint(id);
 }
 
+let bioManifest = {};
+let bioAudioEl;
+let bioMediaSource;
+let bioGainNode;
+let bioStopTimer;
+const BIO_MAX_SECONDS = 5;
+
+async function loadBioManifest() {
+  try {
+    const response = await fetch("./audio/bio/manifest.json");
+    if (!response.ok) throw new Error(String(response.status));
+    bioManifest = await response.json();
+  } catch {
+    bioManifest = {};
+  }
+}
+
+function bioVolume() {
+  return Number(document.querySelector("#bioVolume")?.value || 1.7);
+}
+
+async function playRealBioSound(entry) {
+  const context = await ensureAudio();
+  if (!bioAudioEl) {
+    bioAudioEl = new Audio();
+    bioAudioEl.preload = "auto";
+    bioMediaSource = context.createMediaElementSource(bioAudioEl);
+    bioGainNode = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value = 20;
+    compressor.ratio.value = 8;
+    compressor.attack.value = 0.004;
+    compressor.release.value = 0.18;
+    bioMediaSource.connect(bioGainNode).connect(compressor).connect(context.destination);
+  }
+  bioGainNode.gain.setTargetAtTime(bioVolume(), context.currentTime, 0.02);
+  clearTimeout(bioStopTimer);
+  bioAudioEl.pause();
+  bioAudioEl.src = `./audio/bio/${entry.file}`;
+  bioAudioEl.currentTime = 0;
+  await bioAudioEl.play();
+  bioStopTimer = setTimeout(() => bioAudioEl.pause(), BIO_MAX_SECONDS * 1000);
+}
+
+async function playBiologicalSound(id) {
+  const entry = bioManifest[id];
+  if (entry?.file) {
+    try {
+      await playRealBioSound(entry);
+      speakBioHint(id);
+      return;
+    } catch {
+      // Fall back to synthesis if the recording cannot load or play.
+    }
+  }
+  await synthBiologicalSound(id);
+}
+
 function pickOptions(answer) {
   const options = [answer];
   const pool = biologicalSounds.filter((item) => item.id !== answer.id).sort(() => Math.random() - 0.5);
@@ -823,6 +882,11 @@ function startBioChallenge() {
   playBiologicalSound(bioAnswer.id);
 }
 
+document.querySelector("#bioVolume").addEventListener("input", () => {
+  if (bioGainNode && audioContext) {
+    bioGainNode.gain.setTargetAtTime(bioVolume(), audioContext.currentTime, 0.03);
+  }
+});
 document.querySelector("#newBioChallenge").addEventListener("click", startBioChallenge);
 document.querySelector("#replayBioSound").addEventListener("click", () => {
   if (!bioAnswer) {
@@ -936,6 +1000,7 @@ document.querySelector("#resetQuiz").addEventListener("click", () => {
 });
 
 loadContent();
+loadBioManifest();
 loadMicDevices().catch(() => {});
 updateProgress();
 drawToneWave();

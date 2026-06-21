@@ -394,9 +394,14 @@ git push
 
 ### 生物聲音
 
-- 目前是合成音與語音擬聲提示，不是真實錄音。
-- 優點是部署穩定、不需音檔授權。
-- 若未來要更像真實生物，可改用 CC 授權音檔並放在 `public/audio`。
+- 已改為真實錄音：22 種生物各對應一個音檔，放在 `public/audio/bio/`。
+- 來源以 Wikimedia Commons（公有領域 / 創用 CC）為主，少數採 Google Sound Library。
+- 對應關係與授權記錄在 `public/audio/bio/manifest.json`，並產生 `public/audio/bio/CREDITS.md` 供標示出處。
+- 前端載入 `manifest.json` 後，用 `HTMLAudioElement` 接到 Web Audio 的 gain 與壓縮器播放，沿用「生物音量」滑桿。
+- 每段最多播放 5 秒（`BIO_MAX_SECONDS`），避免鯨魚、海豚等長音檔過長。
+- 若某音檔載入或播放失敗，會自動退回原本的 Web Audio 合成音（`synthBiologicalSound`）。
+- 「擬聲提示」改為選用、預設關閉；勾選後會在真實聲音之後加上語音擬聲。
+- `dolphin.wav` 約 6MB 為最大檔，整個 `public/audio/bio` 約 14MB。
 
 ## 最新狀態
 
@@ -407,5 +412,5 @@ git push
 - 資料頁籤已修復
 - 頻率偵探音量已加強
 - 生物聲音猜猜看已取代靜音任務
-- 生物聲音已加音量控制與擬聲提示
+- 生物聲音已改為真實錄音（`public/audio/bio/`），合成音保留為後援
 
