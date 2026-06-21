@@ -626,6 +626,31 @@ const biologicalSounds = [
   { id: "goat", name: "山羊", group: "哺乳類" }
 ];
 
+const bioVoiceHints = {
+  dog: "汪 汪",
+  cat: "喵 嗚",
+  frog: "呱 呱",
+  cricket: "唧 唧 唧",
+  bee: "嗡 嗡",
+  mosquito: "嗯 嗡",
+  owl: "呼 呼",
+  dolphin: "咿 咿",
+  whale: "嗚 嗚",
+  rooster: "喔 喔 啼",
+  cow: "哞",
+  sheep: "咩 咩",
+  horse: "嘶 嘶",
+  elephant: "嗚 哞",
+  wolf: "嗷 嗚",
+  crow: "啊 啊",
+  duck: "嘎 嘎",
+  cicada: "知 了 知 了",
+  monkey: "吱 吱",
+  pig: "哼 哼",
+  snake: "嘶 嘶",
+  goat: "咩 欸"
+};
+
 function createNoiseBuffer(context, seconds = 1) {
   const buffer = context.createBuffer(1, context.sampleRate * seconds, context.sampleRate);
   const data = buffer.getChannelData(0);
@@ -667,12 +692,31 @@ function playNoiseEvent(context, output, { start, duration, frequency = 1200, ty
   source.stop(start + duration + 0.04);
 }
 
+function speakBioHint(id) {
+  if (!document.querySelector("#bioVoiceHint")?.checked || !("speechSynthesis" in window)) return;
+  const text = bioVoiceHints[id];
+  if (!text) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "zh-TW";
+  utterance.rate = 0.86;
+  utterance.pitch = id === "elephant" || id === "cow" || id === "whale" ? 0.55 : id === "mosquito" || id === "cricket" || id === "cicada" ? 1.55 : 1.08;
+  utterance.volume = Math.min(1, Math.max(0.35, Number(document.querySelector("#bioVolume")?.value || 1.7) / 2.4));
+  setTimeout(() => window.speechSynthesis.speak(utterance), 130);
+}
+
 async function playBiologicalSound(id) {
   const context = await ensureAudio();
   const now = context.currentTime + 0.04;
   const master = context.createGain();
-  master.gain.value = 0.72;
-  master.connect(context.destination);
+  const compressor = context.createDynamicsCompressor();
+  master.gain.value = Number(document.querySelector("#bioVolume")?.value || 1.7);
+  compressor.threshold.value = -18;
+  compressor.knee.value = 20;
+  compressor.ratio.value = 8;
+  compressor.attack.value = 0.004;
+  compressor.release.value = 0.18;
+  master.connect(compressor).connect(context.destination);
   const tone = (frequency, start, duration, type, volume, endFrequency = null) =>
     playToneEvent(context, master, { frequency, start: now + start, duration, type, volume, endFrequency });
   const noise = (start, duration, frequency, type, volume) =>
@@ -748,6 +792,7 @@ async function playBiologicalSound(id) {
     default:
       tone(440, 0, 0.45, "sine", 0.08);
   }
+  speakBioHint(id);
 }
 
 function pickOptions(answer) {

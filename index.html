@@ -190,6 +190,9 @@
               <button id="newBioChallenge" class="primary-action">隨機出題</button>
               <button id="replayBioSound">重播聲音</button>
             </div>
+            <label for="bioVolume">生物音量</label>
+            <input id="bioVolume" type="range" min="0.6" max="2.4" value="1.7" step="0.1" />
+            <label class="toggle-line"><input id="bioVoiceHint" type="checkbox" checked /> 加入擬聲提示</label>
             <div class="choice-grid" id="bioChoices"></div>
             <div class="metric-grid">
               <div><span>題數</span><strong id="bioRound">0</strong></div>
