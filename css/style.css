@@ -222,17 +222,6 @@ input[type="range"] {
   font-weight: 700;
 }
 
-.place-detail {
-  right: 24px;
-  bottom: 24px;
-  width: min(360px, calc(100vw - 48px));
-  padding: 0.95rem 1rem;
-}
-
-.place-detail h2 {
-  margin-bottom: 0.45rem;
-}
-
 .loading-state {
   position: absolute;
   left: 50%;
@@ -287,8 +276,7 @@ input[type="range"] {
     width: 100%;
   }
 
-  .city-panel,
-  .place-detail {
+  .city-panel {
     position: relative;
     left: auto;
     right: auto;
@@ -302,18 +290,8 @@ input[type="range"] {
     order: 3;
   }
 
-  .place-detail {
-    order: 4;
-    transform: none;
-    opacity: 1;
-  }
-
-  .place-detail.is-visible {
-    transform: none;
-  }
-
   .drone-console {
-    order: 5;
+    order: 4;
   }
 }
 

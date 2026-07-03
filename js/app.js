@@ -36,11 +36,7 @@ const ui = {
   speedRange: document.querySelector("#speedRange"),
   tourButton: document.querySelector("#tourButton"),
   homeButton: document.querySelector("#homeButton"),
-  nightButton: document.querySelector("#nightButton"),
-  placeCounty: document.querySelector("#placeCounty"),
-  placeTitle: document.querySelector("#placeTitle"),
-  placeText: document.querySelector("#placeText"),
-  detail: document.querySelector(".place-detail")
+  nightButton: document.querySelector("#nightButton")
 };
 
 const palette = {
@@ -447,10 +443,6 @@ function focusLandmark(item) {
   cameraGoal.target.copy(target);
   cameraGoal.position.copy(target).add(offset);
   ui.focusName.textContent = item.county;
-  ui.placeCounty.textContent = item.county;
-  ui.placeTitle.textContent = item.place;
-  ui.placeText.textContent = item.note;
-  ui.detail.classList.add("is-visible");
   updateActiveCity();
 }
 
@@ -466,10 +458,6 @@ function goHome() {
   camera.position.copy(cameraGoal.position);
   controls.target.copy(cameraGoal.target);
   ui.focusName.textContent = "自由飛行";
-  ui.placeCounty.textContent = "DRONE VIEW";
-  ui.placeTitle.textContent = "自由瀏覽台灣";
-  ui.placeText.textContent = "選擇縣市地標，鏡頭會飛到對應位置。每個地標以立體模型呈現，適合課堂導覽、地理介紹與台灣印象探索。";
-  ui.detail.classList.remove("is-visible");
   updateActiveCity();
 }
 
