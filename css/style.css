@@ -254,11 +254,11 @@ input[type="range"] {
   left: 50%;
   bottom: 84px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 0.45rem 0.8rem;
-  width: min(800px, calc(100vw - 420px));
-  min-width: 470px;
+  width: min(920px, calc(100vw - 320px));
+  min-width: 620px;
   padding: 0.45rem 1rem;
   transform: translateX(-50%);
   border-radius: 8px;
@@ -376,6 +376,8 @@ input[type="range"] {
   .flight-help {
     order: 5;
     border-radius: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
   }
 
   .nav-collapsed .city-panel {
