@@ -42,7 +42,8 @@ const ui = {
 
 const EARTH_RADIUS = 52;
 const DRONE_ALTITUDE = 15;
-const LABEL_DISTANCE = 42;
+const LABEL_SURFACE_DISTANCE = 7.5;
+const PHOTO_SURFACE_DISTANCE = 4.8;
 const MIN_CAMERA_RADIUS = EARTH_RADIUS + 2.15;
 const MAX_CAMERA_RADIUS = 270;
 const textureUrls = {
@@ -1207,11 +1208,14 @@ function updateTour(delta) {
 }
 
 function updateLabels() {
+  const droneGroundPoint = camera.position.clone().normalize().multiplyScalar(EARTH_RADIUS);
   labelSprites.forEach((label) => {
     const parent = label.parent;
     const worldPosition = new THREE.Vector3();
     parent.getWorldPosition(worldPosition);
-    const near = camera.position.distanceTo(worldPosition) < LABEL_DISTANCE || selected?.place === label.userData.place;
+    const surfaceDistance = droneGroundPoint.distanceTo(worldPosition.clone().setLength(EARTH_RADIUS));
+    const overhead = surfaceDistance < LABEL_SURFACE_DISTANCE && camera.position.length() < EARTH_RADIUS + 42;
+    const near = overhead || selected?.place === label.userData.place;
     label.material.opacity = THREE.MathUtils.lerp(label.material.opacity, near ? 1 : 0, 0.12);
     label.position.y = label.userData.floatBase + Math.sin(clock.elapsedTime * 1.8 + label.userData.floatPhase) * 0.22;
   });
@@ -1219,9 +1223,10 @@ function updateLabels() {
     const parent = card.parent;
     const worldPosition = new THREE.Vector3();
     parent.getWorldPosition(worldPosition);
-    const distance = camera.position.distanceTo(worldPosition);
+    const surfaceDistance = droneGroundPoint.distanceTo(worldPosition.clone().setLength(EARTH_RADIUS));
     const selectedCard = selected?.place === card.userData.place;
-    const near = distance < 26 || selectedCard;
+    const overhead = surfaceDistance < PHOTO_SURFACE_DISTANCE && camera.position.length() < EARTH_RADIUS + 30;
+    const near = overhead || selectedCard;
     card.material.opacity = THREE.MathUtils.lerp(card.material.opacity, near ? 1 : 0, 0.1);
     card.position.y = card.userData.floatBase + Math.sin(clock.elapsedTime * 1.25 + card.userData.floatPhase) * 0.18;
   });
