@@ -10,7 +10,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050b14);
-scene.fog = new THREE.FogExp2(0x050b14, 0.0018);
+scene.fog = new THREE.FogExp2(0x050b14, 0.0009);
 
 const camera = new THREE.PerspectiveCamera(54, 1, 0.1, 1200);
 camera.position.set(0, 72, 168);
@@ -24,8 +24,8 @@ controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
 controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
 controls.touches.ONE = THREE.TOUCH.ROTATE;
 controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
-controls.minDistance = 56;
-controls.maxDistance = 230;
+controls.minDistance = 3;
+controls.maxDistance = 260;
 controls.target.set(0, 0, 0);
 
 const ui = {
@@ -43,6 +43,8 @@ const ui = {
 const EARTH_RADIUS = 52;
 const DRONE_ALTITUDE = 15;
 const LABEL_DISTANCE = 42;
+const MIN_CAMERA_RADIUS = EARTH_RADIUS + 2.15;
+const MAX_CAMERA_RADIUS = 270;
 const textureUrls = {
   day: "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg",
   bump: "https://threejs.org/examples/textures/planets/earth_bump_2048.jpg",
@@ -253,14 +255,81 @@ async function buildEarth() {
   );
   earthGroup.add(atmosphere);
 
+  const space = new THREE.Mesh(
+    new THREE.SphereGeometry(690, 64, 48),
+    new THREE.MeshBasicMaterial({ map: makeSpaceTexture(), side: THREE.BackSide, depthWrite: false })
+  );
+  scene.add(space);
+
   const starGeometry = new THREE.BufferGeometry();
   const starPositions = [];
-  for (let i = 0; i < 1200; i += 1) {
-    const v = new THREE.Vector3().randomDirection().multiplyScalar(420 + Math.random() * 280);
+  const starColors = [];
+  for (let i = 0; i < 2600; i += 1) {
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(250 + Math.random() * 430);
     starPositions.push(v.x, v.y, v.z);
+    const warmth = Math.random();
+    const color = new THREE.Color().setHSL(0.58 + warmth * 0.08, 0.22, 0.72 + Math.random() * 0.26);
+    starColors.push(color.r, color.g, color.b);
   }
   starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
-  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xffffff, size: 0.85, sizeAttenuation: true })));
+  starGeometry.setAttribute("color", new THREE.Float32BufferAttribute(starColors, 3));
+  scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({
+    size: 0.92,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9
+  })));
+}
+
+function makeSpaceTexture() {
+  const spaceCanvas = document.createElement("canvas");
+  spaceCanvas.width = 1536;
+  spaceCanvas.height = 768;
+  const ctx = spaceCanvas.getContext("2d");
+  const bg = ctx.createRadialGradient(768, 380, 80, 768, 380, 760);
+  bg.addColorStop(0, "#10213b");
+  bg.addColorStop(0.42, "#071120");
+  bg.addColorStop(1, "#02050d");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, spaceCanvas.width, spaceCanvas.height);
+
+  ctx.save();
+  ctx.translate(768, 384);
+  ctx.rotate(-0.18);
+  const band = ctx.createLinearGradient(0, -170, 0, 170);
+  band.addColorStop(0, "rgba(92, 144, 214, 0)");
+  band.addColorStop(0.34, "rgba(116, 154, 214, 0.08)");
+  band.addColorStop(0.5, "rgba(218, 231, 255, 0.18)");
+  band.addColorStop(0.66, "rgba(116, 154, 214, 0.08)");
+  band.addColorStop(1, "rgba(92, 144, 214, 0)");
+  ctx.fillStyle = band;
+  ctx.fillRect(-900, -170, 1800, 340);
+
+  for (let i = 0; i < 360; i += 1) {
+    const x = -760 + Math.random() * 1520;
+    const y = -150 + (Math.random() - 0.5) * 280;
+    const radius = 0.5 + Math.random() * 1.8;
+    ctx.fillStyle = `rgba(210, 226, 255, ${0.08 + Math.random() * 0.22})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  for (let i = 0; i < 900; i += 1) {
+    const x = Math.random() * spaceCanvas.width;
+    const y = Math.random() * spaceCanvas.height;
+    const radius = Math.random() < 0.92 ? 0.7 : 1.35;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.18 + Math.random() * 0.62})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(spaceCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 function box(w, h, d, color) {
@@ -531,11 +600,9 @@ function handleKeyboard(delta) {
 }
 
 function constrainCameraGoal() {
-  const minRadius = EARTH_RADIUS + 8;
-  const maxRadius = 238;
   const length = cameraGoal.position.length();
-  if (length < minRadius) cameraGoal.position.setLength(minRadius);
-  if (length > maxRadius) cameraGoal.position.setLength(maxRadius);
+  if (length < MIN_CAMERA_RADIUS) cameraGoal.position.setLength(MIN_CAMERA_RADIUS);
+  if (length > MAX_CAMERA_RADIUS) cameraGoal.position.setLength(MAX_CAMERA_RADIUS);
 }
 
 function syncCameraGoal() {
@@ -552,7 +619,8 @@ function handleWheel(event) {
   camera.getWorldDirection(direction);
   const distance = cameraGoal.position.distanceTo(cameraGoal.target);
   const wheelScale = -Math.min(2.8, Math.max(-2.8, event.deltaY / 120));
-  const step = Math.max(2.2, distance * 0.08) * wheelScale * speedMultiplier;
+  const nearSurface = Math.max(1, cameraGoal.position.length() - EARTH_RADIUS);
+  const step = Math.max(0.34, Math.min(distance * 0.08, nearSurface * 0.34)) * wheelScale * speedMultiplier;
   cameraGoal.position.addScaledVector(direction, step);
   constrainCameraGoal();
 }
