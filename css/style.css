@@ -64,7 +64,7 @@ input:focus-visible {
   overflow: hidden;
 }
 
-#earthScene {
+#earthMap {
   position: absolute;
   inset: 0;
   display: block;
@@ -74,8 +74,18 @@ input:focus-visible {
   cursor: grab;
 }
 
-#earthScene:active {
+#earthMap:active {
   cursor: grabbing;
+}
+
+.maplibregl-canvas {
+  outline: none;
+}
+
+.maplibregl-ctrl-attrib {
+  color: rgba(222, 238, 248, 0.82);
+  background: rgba(8, 18, 30, 0.72) !important;
+  border-radius: 8px 0 0 0;
 }
 
 .hud {
@@ -145,6 +155,13 @@ input:focus-visible {
   line-height: 1.2;
 }
 
+.region-heading {
+  margin: 0.42rem 0 0.08rem;
+  color: var(--cyan);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 #landmarkCount {
   color: var(--amber);
 }
@@ -184,13 +201,13 @@ input:focus-visible {
 .county-chip {
   display: inline-grid;
   place-items: center;
-  min-width: 66px;
+  min-width: 28px;
   min-height: 22px;
   padding: 0 0.34rem;
   border-radius: 5px;
   color: #dfeaf5;
   background: rgba(148, 182, 210, 0.22);
-  font-size: 0.7rem;
+  font-size: 0.86rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -203,6 +220,130 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.landmark-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.marker-core {
+  width: 14px;
+  height: 14px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: #ffd76a;
+  box-shadow: 0 0 0 4px rgba(255, 215, 106, 0.18), 0 0 18px rgba(255, 215, 106, 0.65);
+}
+
+.marker-label {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  max-width: 180px;
+  padding: 0.22rem 0.48rem;
+  transform: translateX(-50%) translateY(6px);
+  border: 1px solid rgba(165, 220, 242, 0.28);
+  border-radius: 7px;
+  color: #f5fbff;
+  background: rgba(8, 18, 30, 0.86);
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.landmark-marker.show-label .marker-label,
+.landmark-marker.active .marker-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.landmark-marker.active .marker-core {
+  background: #4fe0cf;
+  box-shadow: 0 0 0 6px rgba(79, 224, 207, 0.22), 0 0 24px rgba(79, 224, 207, 0.9);
+}
+
+.marker-mountain .marker-core,
+.marker-nature .marker-core {
+  background: #8ee88d;
+}
+
+.marker-water .marker-core,
+.marker-ice .marker-core {
+  background: #4fe0cf;
+}
+
+.marker-desert .marker-core,
+.marker-ancient .marker-core {
+  background: #ffd76a;
+}
+
+.marker-city .marker-core,
+.marker-sacred .marker-core {
+  background: #ff8fb0;
+}
+
+.maplibregl-popup-content {
+  overflow: hidden;
+  border: 1px solid rgba(117, 220, 236, 0.26);
+  border-radius: 16px;
+  padding: 0;
+  color: var(--ink);
+  background: rgba(11, 22, 35, 0.96);
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.4);
+}
+
+.maplibregl-popup-close-button {
+  color: #d9edf7;
+  font-size: 1.35rem;
+  padding: 0.2rem 0.42rem;
+}
+
+.landmark-popup {
+  width: min(340px, 74vw);
+}
+
+.landmark-popup img {
+  display: block;
+  width: 100%;
+  height: 148px;
+  object-fit: cover;
+}
+
+.landmark-popup .popup-tag {
+  display: inline-block;
+  margin: 0.75rem 0.85rem 0;
+  border-radius: 6px;
+  padding: 0.18rem 0.42rem;
+  color: #08111f;
+  background: var(--amber);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.landmark-popup h3 {
+  margin: 0.42rem 0.85rem 0.35rem;
+  font-size: 1.18rem;
+}
+
+.landmark-popup p {
+  margin: 0 0.85rem 0.9rem;
+  color: #d9e9f7;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .action-panel {
@@ -320,7 +461,7 @@ input[type="range"] {
     overflow-x: hidden;
   }
 
-  #earthScene {
+  #earthMap {
     position: relative;
     inset: auto;
     order: 1;
