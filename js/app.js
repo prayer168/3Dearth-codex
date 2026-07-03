@@ -35,6 +35,7 @@ const ui = {
   cityList: document.querySelector("#cityList"),
   landmarkCount: document.querySelector("#landmarkCount"),
   speedRange: document.querySelector("#speedRange"),
+  terrainRange: document.querySelector("#terrainRange"),
   tourButton: document.querySelector("#tourButton"),
   homeButton: document.querySelector("#homeButton"),
   nightButton: document.querySelector("#nightButton")
@@ -178,6 +179,7 @@ landmarks.forEach((item) => {
 const earthGroup = new THREE.Group();
 const markerGroup = new THREE.Group();
 const routeGroup = new THREE.Group();
+const localTerrainGroup = new THREE.Group();
 const labelSprites = [];
 const photoSprites = [];
 const landmarkObjects = new Map();
@@ -195,15 +197,20 @@ let tourIndex = 0;
 let tourClock = 0;
 let isNight = false;
 let speedMultiplier = 1;
+let terrainHeightScale = 1.45;
 let pointerStart = null;
 let isPointerInteracting = false;
+let terrainTargetOpacity = 0;
+let currentTerrainMaterial = null;
+let currentTerrainLineMaterial = null;
 
 const cameraGoal = {
   position: camera.position.clone(),
   target: controls.target.clone()
 };
 
-scene.add(earthGroup, markerGroup, routeGroup);
+localTerrainGroup.visible = false;
+scene.add(earthGroup, markerGroup, routeGroup, localTerrainGroup);
 
 const sun = new THREE.DirectionalLight(0xffffff, 3.4);
 sun.position.set(-90, 58, 96);
@@ -284,10 +291,12 @@ async function buildEarth() {
   const material = new THREE.MeshPhongMaterial({
     map: dayMap,
     bumpMap,
-    bumpScale: 1.55,
+    bumpScale: 3.4,
+    displacementMap: bumpMap,
+    displacementScale: 0.42,
     specularMap,
     specular: new THREE.Color(0x466d88),
-    shininess: 18
+    shininess: 26
   });
   earthMesh = new THREE.Mesh(geometry, material);
   earthMesh.receiveShadow = true;
@@ -389,6 +398,169 @@ function makeSpaceTexture() {
   const texture = new THREE.CanvasTexture(spaceCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
+}
+
+function showLocalTerrain(item) {
+  buildLocalTerrain(item);
+  terrainTargetOpacity = 0.96;
+  localTerrainGroup.visible = true;
+}
+
+function hideLocalTerrain() {
+  terrainTargetOpacity = 0;
+}
+
+function buildLocalTerrain(item) {
+  localTerrainGroup.clear();
+  const surface = latLonToVector3(item.lat, item.lon, EARTH_RADIUS + 0.28);
+  const normal = surface.clone().normalize();
+  localTerrainGroup.position.copy(surface);
+  orientToSurface(localTerrainGroup, normal);
+  localTerrainGroup.userData.item = item;
+
+  const geometry = new THREE.PlaneGeometry(82, 58, 150, 110);
+  geometry.rotateX(-Math.PI / 2);
+  applyTerrainHeights(geometry, item);
+  geometry.computeVertexNormals();
+
+  currentTerrainMaterial = new THREE.MeshStandardMaterial({
+    map: makeTerrainTexture(item),
+    roughness: 0.86,
+    metalness: item.type === "water" ? 0.12 : 0.02,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide
+  });
+  const terrain = new THREE.Mesh(geometry, currentTerrainMaterial);
+  terrain.receiveShadow = true;
+  terrain.castShadow = true;
+  localTerrainGroup.add(terrain);
+
+  currentTerrainLineMaterial = new THREE.LineBasicMaterial({ color: 0xd6f4ff, transparent: true, opacity: 0 });
+  const contour = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), currentTerrainLineMaterial);
+  contour.position.y = 0.018;
+  localTerrainGroup.add(contour);
+}
+
+function applyTerrainHeights(geometry, item) {
+  const position = geometry.attributes.position;
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i);
+    const z = position.getZ(i);
+    position.setY(i, terrainHeightAt(x, z, item) * terrainHeightScale);
+  }
+  position.needsUpdate = true;
+}
+
+function refreshLocalTerrainHeight() {
+  const terrain = localTerrainGroup.children[0];
+  if (!terrain?.geometry || !localTerrainGroup.userData.item) return;
+  applyTerrainHeights(terrain.geometry, localTerrainGroup.userData.item);
+  terrain.geometry.computeVertexNormals();
+}
+
+function terrainHeightAt(x, z, item) {
+  const nx = x / 82;
+  const nz = z / 58;
+  const seed = seedFromString(item.place);
+  const ridge = Math.pow(Math.max(0, Math.sin((nx * 8.2 + nz * 3.8 + seed) * Math.PI)), 2.6);
+  const folds = Math.sin((nx * 18 + seed) * 3.1) * Math.cos((nz * 14 - seed) * 2.3) * 0.28;
+  const noise = Math.sin((x + seed * 17) * 0.48) * Math.sin((z - seed * 13) * 0.38) * 0.36;
+  const coast = smoothstep(-0.18, 0.2, nz + Math.sin(nx * 12 + seed) * 0.1);
+  if (item.type === "water") return Math.max(-0.08, 0.25 + ridge * 1.1 + noise) * (item.place.includes("瀑布") || item.place.includes("峽灣") ? 1.25 : 0.72);
+  if (item.type === "mountain") return 0.45 + ridge * 4.2 + folds + noise;
+  if (item.type === "desert") return 0.18 + Math.pow(Math.sin((nx * 10 + seed) * Math.PI), 2) * 1.15 + noise * 0.38;
+  if (item.type === "ice") return 0.28 + ridge * 1.8 + noise * 0.22;
+  if (item.type === "city") return 0.18 + Math.max(0, noise) * 0.4 + (Math.abs(x % 6) < 0.55 || Math.abs(z % 5) < 0.45 ? 0.18 : 0);
+  if (item.type === "nature") return 0.2 + ridge * 0.9 + noise * 0.5;
+  return 0.25 + coast * 1.1 + ridge * 1.6 + noise;
+}
+
+function makeTerrainTexture(item) {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = 1024;
+  textureCanvas.height = 768;
+  const ctx = textureCanvas.getContext("2d");
+  const image = ctx.createImageData(textureCanvas.width, textureCanvas.height);
+  const seed = seedFromString(item.place);
+  for (let y = 0; y < textureCanvas.height; y += 1) {
+    for (let x = 0; x < textureCanvas.width; x += 1) {
+      const u = x / textureCanvas.width;
+      const v = y / textureCanvas.height;
+      const h = terrainHeightAt((u - 0.5) * 82, (v - 0.5) * 58, item) / Math.max(0.7, terrainHeightScale);
+      const n = Math.sin((u * 42 + seed) * 5.3) * Math.sin((v * 36 - seed) * 4.7) * 0.08;
+      const c = terrainColor(item, h + n, u, v, seed);
+      const idx = (y * textureCanvas.width + x) * 4;
+      image.data[idx] = c.r;
+      image.data[idx + 1] = c.g;
+      image.data[idx + 2] = c.b;
+      image.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  addTerrainShading(ctx, item, seed);
+  const texture = new THREE.CanvasTexture(textureCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return texture;
+}
+
+function terrainColor(item, h, u, v, seed) {
+  if (item.type === "water") {
+    const waterBand = v + Math.sin(u * 14 + seed) * 0.06;
+    if (waterBand > 0.38) return mixRgb([16, 93, 103], [85, 165, 164], Math.min(1, waterBand));
+    return mixRgb([73, 111, 82], [161, 148, 103], Math.min(1, h * 0.4));
+  }
+  if (item.type === "mountain") {
+    if (h > 3.1) return { r: 222, g: 226, b: 214 };
+    return mixRgb([50, 86, 47], [155, 135, 103], Math.min(1, h / 2.8));
+  }
+  if (item.type === "desert") return mixRgb([178, 124, 70], [236, 205, 139], Math.min(1, h / 1.5));
+  if (item.type === "ice") return mixRgb([138, 197, 215], [238, 248, 250], Math.min(1, h / 1.8));
+  if (item.type === "city") {
+    const road = Math.abs((u * 18) % 1 - 0.5) < 0.045 || Math.abs((v * 15) % 1 - 0.5) < 0.04;
+    return road ? { r: 150, g: 151, b: 143 } : mixRgb([72, 106, 74], [178, 168, 145], Math.min(1, h));
+  }
+  if (item.type === "nature") return mixRgb([75, 122, 67], [177, 166, 93], Math.min(1, h));
+  return mixRgb([60, 101, 66], [188, 159, 103], Math.min(1, h / 2.2));
+}
+
+function addTerrainShading(ctx, item, seed) {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  const shade = ctx.createLinearGradient(0, 0, width, height);
+  shade.addColorStop(0, "rgba(255,255,255,0.18)");
+  shade.addColorStop(0.46, "rgba(255,255,255,0)");
+  shade.addColorStop(1, "rgba(0,0,0,0.34)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, width, height);
+  if (item.type === "water") {
+    ctx.fillStyle = "rgba(73, 210, 210, 0.12)";
+    for (let i = 0; i < 18; i += 1) {
+      ctx.beginPath();
+      ctx.ellipse(width * (0.15 + Math.random() * 0.7), height * (0.48 + Math.random() * 0.42), 70 + Math.random() * 160, 12 + Math.random() * 34, seed + i, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function mixRgb(a, b, t) {
+  return {
+    r: Math.round(a[0] + (b[0] - a[0]) * t),
+    g: Math.round(a[1] + (b[1] - a[1]) * t),
+    b: Math.round(a[2] + (b[2] - a[2]) * t)
+  };
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function seedFromString(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) % 10000;
+  return hash / 10000;
 }
 
 function box(w, h, d, color) {
@@ -1099,9 +1271,10 @@ function focusLandmark(item) {
   const tangentNorth = new THREE.Vector3().crossVectors(normal, tangentEast).normalize();
   cameraGoal.target.copy(surface.clone().addScaledVector(normal, 2.5));
   cameraGoal.position.copy(surface)
-    .addScaledVector(normal, DRONE_ALTITUDE + 9)
-    .addScaledVector(tangentEast, 10)
-    .addScaledVector(tangentNorth, 8);
+    .addScaledVector(normal, DRONE_ALTITUDE + 3)
+    .addScaledVector(tangentEast, 15)
+    .addScaledVector(tangentNorth, 9);
+  showLocalTerrain(item);
   updateActiveCity();
 }
 
@@ -1109,6 +1282,7 @@ function goHome() {
   selected = null;
   autoTour = false;
   ui.tourButton.classList.remove("active");
+  hideLocalTerrain();
   if (window.innerWidth < 700) {
     cameraGoal.position.set(0, 118, 72);
   } else {
@@ -1232,6 +1406,14 @@ function updateLabels() {
   });
 }
 
+function updateLocalTerrain(delta) {
+  if (!currentTerrainMaterial) return;
+  const nextOpacity = THREE.MathUtils.lerp(currentTerrainMaterial.opacity, terrainTargetOpacity, 1 - Math.pow(0.001, delta));
+  currentTerrainMaterial.opacity = nextOpacity;
+  if (currentTerrainLineMaterial) currentTerrainLineMaterial.opacity = nextOpacity * 0.12;
+  localTerrainGroup.visible = nextOpacity > 0.015;
+}
+
 function updateDrone() {
   if (!drone) return;
   const normal = camera.position.clone().normalize();
@@ -1290,6 +1472,7 @@ function animate() {
     controls.target.lerp(cameraGoal.target, 0.065);
   }
   if (cloudMesh) cloudMesh.rotation.y += delta * 0.015;
+  updateLocalTerrain(delta);
   markerGroup.children.forEach((object) => {
     if (object.userData?.place) object.rotation.y += delta * 0.22;
   });
@@ -1327,6 +1510,10 @@ ui.tourButton.addEventListener("click", () => {
 });
 ui.speedRange.addEventListener("input", () => {
   speedMultiplier = Number(ui.speedRange.value);
+});
+ui.terrainRange.addEventListener("input", () => {
+  terrainHeightScale = Number(ui.terrainRange.value);
+  refreshLocalTerrainHeight();
 });
 
 window.addEventListener("keydown", (event) => {
