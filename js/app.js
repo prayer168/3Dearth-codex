@@ -117,10 +117,68 @@ const landmarks = [
   { region: "極地", place: "格陵蘭冰峽灣", country: "格陵蘭", lat: 69.2198, lon: -51.0986, type: "ice" }
 ];
 
+const wikiTitleByPlace = {
+  "萬里長城": "Great Wall of China",
+  "泰姬瑪哈陵": "Taj Mahal",
+  "吳哥窟": "Angkor Wat",
+  "富士山": "Mount Fuji",
+  "東京晴空塔": "Tokyo Skytree",
+  "台北 101": "Taipei 101",
+  "婆羅浮屠": "Borobudur",
+  "下龍灣": "Hạ Long Bay",
+  "喜馬拉雅聖母峰": "Mount Everest",
+  "帕穆卡麗棉堡": "Pamukkale",
+  "佩特拉古城": "Petra",
+  "杜拜哈里發塔": "Burj Khalifa",
+  "艾菲爾鐵塔": "Eiffel Tower",
+  "羅馬競技場": "Colosseum",
+  "聖家堂": "Sagrada Família",
+  "巨石陣": "Stonehenge",
+  "雅典衛城": "Acropolis of Athens",
+  "聖瓦西里主教座堂": "Saint Basil's Cathedral",
+  "冰島藍湖": "Blue Lagoon (geothermal spa)",
+  "馬特洪峰": "Matterhorn",
+  "新天鵝堡": "Neuschwanstein Castle",
+  "布拉格查理大橋": "Charles Bridge",
+  "吉薩金字塔": "Giza pyramid complex",
+  "撒哈拉沙漠": "Sahara",
+  "維多利亞瀑布": "Victoria Falls",
+  "乞力馬扎羅山": "Mount Kilimanjaro",
+  "桌山": "Table Mountain",
+  "塞倫蓋蒂草原": "Serengeti",
+  "馬拉喀什傑馬夫納廣場": "Jemaa el-Fnaa",
+  "自由女神像": "Statue of Liberty",
+  "大峽谷": "Grand Canyon",
+  "黃石大稜鏡溫泉": "Grand Prismatic Spring",
+  "優勝美地半圓頂": "Half Dome",
+  "金門大橋": "Golden Gate Bridge",
+  "尼加拉瀑布": "Niagara Falls",
+  "奇琴伊察": "Chichen Itza",
+  "哈瓦那舊城": "Old Havana",
+  "馬丘比丘": "Machu Picchu",
+  "基督救世主像": "Christ the Redeemer (statue)",
+  "伊瓜蘇瀑布": "Iguazu Falls",
+  "烏尤尼鹽沼": "Salar de Uyuni",
+  "加拉巴哥群島": "Galápagos Islands",
+  "巴塔哥尼亞菲茨羅伊峰": "Monte Fitz Roy",
+  "雪梨歌劇院": "Sydney Opera House",
+  "烏魯魯": "Uluru",
+  "大堡礁": "Great Barrier Reef",
+  "米佛峽灣": "Milford Sound",
+  "復活節島摩艾": "Moai",
+  "南極冰原": "Antarctic ice sheet",
+  "格陵蘭冰峽灣": "Ilulissat Icefjord"
+};
+
+landmarks.forEach((item) => {
+  item.wikiTitle = wikiTitleByPlace[item.place] || item.place;
+});
+
 const earthGroup = new THREE.Group();
 const markerGroup = new THREE.Group();
 const routeGroup = new THREE.Group();
 const labelSprites = [];
+const photoSprites = [];
 const landmarkObjects = new Map();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -379,64 +437,451 @@ function makeLandmarkModel(item) {
   marker.rotation.x = Math.PI / 2;
   group.add(marker);
 
-  if (item.type === "city") {
-    group.add(box(0.8, 2.3, 0.8, 0x9fc7de), box(1.25, 1.25, 1, 0x7fb4d6));
-    group.children[2].position.set(1.05, 0.62, 0);
-    const spire = cone(0.28, 1.2, 0xffd76a, 4);
-    spire.position.y = 2.95;
-    group.add(spire);
-  } else if (item.type === "ancient") {
-    const base = box(2.15, 0.42, 1.55, 0xd1b37d);
-    const cap = cone(1.1, 1.65, 0xc08f53, 4);
-    cap.position.y = 1.0;
-    group.add(base, cap);
-  } else if (item.type === "mountain") {
-    const peak = cone(1.35, 2.7, 0x6f8d6a, 5);
-    const snow = cone(0.55, 0.7, 0xf5fbff, 5);
-    snow.position.y = 2.08;
-    group.add(peak, snow);
-  } else if (item.type === "water") {
-    const pool = new THREE.Mesh(
-      new THREE.CircleGeometry(1.38, 40),
-      new THREE.MeshStandardMaterial({ color: 0x39c7dc, roughness: 0.32, metalness: 0.08 })
-    );
-    pool.rotation.x = -Math.PI / 2;
-    pool.position.y = 0.08;
-    const spray = cylinder(0.06, 1.5, 0xd8f4ff, 10);
-    spray.position.y = 0.85;
-    group.add(pool, spray);
-  } else if (item.type === "desert") {
-    const dune = new THREE.Mesh(
-      new THREE.SphereGeometry(1.35, 28, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
-      new THREE.MeshStandardMaterial({ color: 0xd7a35c, roughness: 0.92 })
-    );
-    dune.scale.set(1.35, 0.45, 0.82);
-    dune.position.y = 0.12;
-    group.add(dune);
-  } else if (item.type === "ice") {
-    const ice = cone(1.2, 1.8, 0xd8f4ff, 6);
-    ice.position.y = 0.8;
-    group.add(ice);
-  } else if (item.type === "sacred") {
-    const body = cylinder(0.72, 1.65, 0xe5dfd2, 24);
-    body.position.y = 0.82;
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.78, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), body.material);
-    dome.position.y = 1.7;
-    group.add(body, dome);
-  } else {
-    const tree = cone(0.9, 1.9, 0x76bb63, 8);
-    tree.position.y = 0.82;
-    group.add(tree);
-  }
+  buildLandmarkSilhouette(group, item);
 
   const beam = cylinder(0.024, 4.2, color.getHex(), 8);
   beam.material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.56 });
   beam.position.y = 2.1;
   group.add(beam);
   group.add(makeLandmarkLabel(item, color));
+  group.add(makePhotoCard(item, color));
 
   markerGroup.add(group);
   landmarkObjects.set(item.place, group);
+}
+
+function buildLandmarkSilhouette(group, item) {
+  const p = item.place;
+  if (p.includes("長城")) return addGreatWall(group);
+  if (p.includes("泰姬")) return addTajMahal(group);
+  if (p.includes("吳哥") || p.includes("婆羅浮屠") || p.includes("奇琴")) return addSteppedTemple(group, p.includes("奇琴"));
+  if (p.includes("富士") || p.includes("聖母峰") || p.includes("乞力馬扎羅") || p.includes("馬特洪") || p.includes("菲茨羅伊")) return addMountain(group, p);
+  if (p.includes("晴空塔")) return addNeedleTower(group, 4.8, 0x9fd8f5);
+  if (p.includes("台北 101")) return addTaipei101(group);
+  if (p.includes("下龍灣") || p.includes("大堡礁") || p.includes("加拉巴哥")) return addIslandScene(group);
+  if (p.includes("棉堡") || p.includes("藍湖") || p.includes("大稜鏡")) return addThermalPool(group, p.includes("大稜鏡"));
+  if (p.includes("佩特拉")) return addPetraFacade(group);
+  if (p.includes("哈里發")) return addNeedleTower(group, 6.1, 0xb9d7e8);
+  if (p.includes("艾菲爾")) return addEiffelTower(group);
+  if (p.includes("競技場")) return addColosseum(group);
+  if (p.includes("聖家堂") || p.includes("聖瓦西里")) return addCathedral(group, p.includes("瓦西里"));
+  if (p.includes("巨石陣")) return addStonehenge(group);
+  if (p.includes("衛城")) return addAcropolis(group);
+  if (p.includes("城堡")) return addCastle(group);
+  if (p.includes("查理大橋") || p.includes("金門大橋")) return addBridge(group, p.includes("金門"));
+  if (p.includes("金字塔")) return addPyramids(group);
+  if (p.includes("撒哈拉") || p.includes("烏尤尼")) return addDesertOrSalt(group, p.includes("烏尤尼"));
+  if (p.includes("瀑布")) return addWaterfall(group);
+  if (p.includes("桌山") || p.includes("烏魯魯") || p.includes("大峽谷")) return addMesa(group, p);
+  if (p.includes("草原")) return addSavanna(group);
+  if (p.includes("自由女神")) return addLiberty(group);
+  if (p.includes("半圓頂")) return addHalfDome(group);
+  if (p.includes("哈瓦那") || p.includes("馬拉喀什")) return addOldTown(group);
+  if (p.includes("馬丘比丘")) return addMachuPicchu(group);
+  if (p.includes("基督救世主")) return addChristStatue(group);
+  if (p.includes("歌劇院")) return addSydneyOpera(group);
+  if (p.includes("米佛峽灣")) return addFjord(group);
+  if (p.includes("摩艾")) return addMoai(group);
+  if (p.includes("冰原") || p.includes("冰峽灣")) return addIce(group, p.includes("峽灣"));
+  return addGenericByType(group, item);
+}
+
+function addGreatWall(group) {
+  for (let i = -2; i <= 2; i += 1) {
+    const wall = box(1.25, 0.34, 0.36, 0xb99366);
+    wall.position.set(i * 0.78, 0.34 + Math.abs(i) * 0.05, Math.sin(i) * 0.5);
+    wall.rotation.y = i * 0.24;
+    group.add(wall);
+  }
+  [-2.1, 0, 2.1].forEach((x) => {
+    const tower = box(0.52, 0.85, 0.52, 0xc4a06e);
+    tower.position.set(x, 0.72, Math.sin(x) * 0.28);
+    group.add(tower);
+  });
+}
+
+function addTajMahal(group) {
+  const base = box(2.7, 0.34, 1.75, 0xece5d8);
+  base.position.y = 0.18;
+  group.add(base);
+  const body = box(1.35, 1.05, 1.05, 0xf4efe4);
+  body.position.y = 0.88;
+  group.add(body);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.66, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), body.material);
+  dome.position.y = 1.45;
+  group.add(dome);
+  [-1.18, 1.18].forEach((x) => {
+    const minaret = cylinder(0.12, 1.7, 0xf3eadf, 18);
+    minaret.position.set(x, 0.9, 0.64);
+    group.add(minaret);
+  });
+}
+
+function addSteppedTemple(group, tall = false) {
+  const levels = tall ? 4 : 3;
+  for (let i = 0; i < levels; i += 1) {
+    const tier = box(2.5 - i * 0.42, 0.36, 1.8 - i * 0.32, 0xb8935b);
+    tier.position.y = 0.18 + i * 0.34;
+    group.add(tier);
+  }
+  const spire = cone(tall ? 0.55 : 0.34, tall ? 0.9 : 1.2, tall ? 0xcaa36a : 0x6e6f5b, tall ? 4 : 6);
+  spire.position.y = levels * 0.35 + 0.48;
+  group.add(spire);
+}
+
+function addMountain(group, place) {
+  const baseColor = place.includes("富士") ? 0x58785d : 0x687466;
+  const peak = cone(place.includes("馬特洪") || place.includes("菲茨") ? 1.05 : 1.42, place.includes("富士") ? 2.35 : 3.0, baseColor, place.includes("富士") ? 32 : 5);
+  peak.position.y = place.includes("富士") ? 1.1 : 1.35;
+  group.add(peak);
+  const snow = cone(0.48, 0.74, 0xf4fbff, place.includes("富士") ? 32 : 5);
+  snow.position.y = place.includes("富士") ? 2.18 : 2.65;
+  group.add(snow);
+}
+
+function addNeedleTower(group, height, color) {
+  const shaft = cylinder(0.18, height, color, 22);
+  shaft.position.y = height / 2;
+  group.add(shaft);
+  const deck = cylinder(0.55, 0.18, 0xd8edf7, 24);
+  deck.position.y = height * 0.72;
+  group.add(deck);
+  const spire = cone(0.16, 0.9, 0xffd76a, 18);
+  spire.position.y = height + 0.45;
+  group.add(spire);
+}
+
+function addTaipei101(group) {
+  for (let i = 0; i < 8; i += 1) {
+    const tier = box(0.94 - i * 0.045, 0.48, 0.94 - i * 0.045, 0x89b8c9);
+    tier.position.y = 0.28 + i * 0.43;
+    group.add(tier);
+  }
+  const spire = cone(0.22, 1.0, 0xffd76a, 4);
+  spire.position.y = 4.08;
+  group.add(spire);
+}
+
+function addIslandScene(group) {
+  const water = new THREE.Mesh(new THREE.CircleGeometry(1.55, 44), new THREE.MeshStandardMaterial({ color: 0x2bb8c8, roughness: 0.28 }));
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = 0.04;
+  group.add(water);
+  [-0.75, 0.1, 0.85].forEach((x, i) => {
+    const island = cone(0.34 + i * 0.05, 0.95 + i * 0.22, 0x6c8b61, 7);
+    island.position.set(x, 0.42 + i * 0.08, Math.sin(i) * 0.45);
+    group.add(island);
+  });
+}
+
+function addThermalPool(group, rainbow = false) {
+  const colors = rainbow ? [0x1e88e5, 0x4fe0cf, 0xffd76a, 0xf07167] : [0x54d4ce, 0xc9f5ef, 0x85d7ff];
+  colors.forEach((c, i) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42 + i * 0.24, 0.055, 8, 48), new THREE.MeshStandardMaterial({ color: c, roughness: 0.2 }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.08 + i * 0.015;
+    group.add(ring);
+  });
+  const steam = cylinder(0.045, 1.15, 0xd8f4ff, 10);
+  steam.position.y = 0.7;
+  group.add(steam);
+}
+
+function addPetraFacade(group) {
+  const cliff = box(2.45, 1.9, 0.35, 0xbb7657);
+  cliff.position.y = 0.95;
+  group.add(cliff);
+  const door = box(0.42, 0.9, 0.08, 0x3a2630);
+  door.position.set(0, 0.55, 0.2);
+  group.add(door);
+  [-0.62, -0.22, 0.22, 0.62].forEach((x) => {
+    const column = cylinder(0.055, 1.05, 0xe2b48a, 10);
+    column.position.set(x, 0.72, 0.23);
+    group.add(column);
+  });
+  const pediment = cone(0.78, 0.58, 0xd39a72, 3);
+  pediment.position.set(0, 1.48, 0.23);
+  pediment.rotation.y = Math.PI / 2;
+  group.add(pediment);
+}
+
+function addEiffelTower(group) {
+  [-0.55, 0.55].forEach((x) => {
+    [-0.38, 0.38].forEach((z) => {
+      const leg = box(0.12, 2.2, 0.12, 0x8f7b61);
+      leg.position.set(x * 0.58, 1.02, z * 0.58);
+      leg.rotation.z = -x * 0.16;
+      group.add(leg);
+    });
+  });
+  [0.9, 1.65, 2.42].forEach((y, i) => {
+    const deck = box(1.25 - i * 0.28, 0.12, 0.9 - i * 0.2, 0xb39a78);
+    deck.position.y = y;
+    group.add(deck);
+  });
+  const spire = cone(0.18, 1.1, 0xffd76a, 4);
+  spire.position.y = 3.08;
+  group.add(spire);
+}
+
+function addColosseum(group) {
+  const outer = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.22, 12, 54), new THREE.MeshStandardMaterial({ color: 0xcaa983, roughness: 0.8 }));
+  outer.scale.z = 0.62;
+  outer.rotation.x = Math.PI / 2;
+  outer.position.y = 0.44;
+  group.add(outer);
+  for (let i = 0; i < 12; i += 1) {
+    const arch = box(0.07, 0.62, 0.12, 0xe0c39a);
+    const a = (i / 12) * Math.PI * 2;
+    arch.position.set(Math.cos(a) * 1.08, 0.64, Math.sin(a) * 0.68);
+    arch.rotation.y = -a;
+    group.add(arch);
+  }
+}
+
+function addCathedral(group, onion = false) {
+  const base = box(1.55, 0.72, 1.05, onion ? 0xc25145 : 0xd6c8b7);
+  base.position.y = 0.36;
+  group.add(base);
+  [-0.52, 0, 0.52].forEach((x, i) => {
+    const tower = cylinder(0.18, 1.35 + i * 0.3, onion ? 0xf2d4a5 : 0xdcd4c7, 10);
+    tower.position.set(x, 0.95 + i * 0.14, 0);
+    group.add(tower);
+    const top = onion ? new THREE.Mesh(new THREE.SphereGeometry(0.25, 18, 12), new THREE.MeshStandardMaterial({ color: [0x61b4d9, 0xffd76a, 0x78c46f][i] })) : cone(0.18, 0.65, 0x8d9aae, 8);
+    top.position.set(x, 1.72 + i * 0.28, 0);
+    group.add(top);
+  });
+}
+
+function addStonehenge(group) {
+  for (let i = 0; i < 8; i += 1) {
+    const a = (i / 8) * Math.PI * 2;
+    const stone = box(0.22, 0.95, 0.28, 0x9b9888);
+    stone.position.set(Math.cos(a) * 0.92, 0.48, Math.sin(a) * 0.7);
+    stone.rotation.y = -a;
+    group.add(stone);
+    if (i % 2 === 0) {
+      const lintel = box(0.62, 0.18, 0.24, 0xaaa694);
+      lintel.position.set(Math.cos(a) * 0.92, 1.02, Math.sin(a) * 0.7);
+      lintel.rotation.y = -a;
+      group.add(lintel);
+    }
+  }
+}
+
+function addAcropolis(group) {
+  const platform = box(2.2, 0.25, 1.35, 0xc8b28a);
+  platform.position.y = 0.14;
+  group.add(platform);
+  for (let i = -3; i <= 3; i += 1) {
+    const col = cylinder(0.06, 0.92, 0xe2d2b5, 10);
+    col.position.set(i * 0.28, 0.7, 0.46);
+    group.add(col);
+  }
+  const roof = box(2.0, 0.18, 1.0, 0xd4bc8c);
+  roof.position.y = 1.2;
+  group.add(roof);
+}
+
+function addCastle(group) {
+  const body = box(1.6, 0.9, 1.1, 0xd8d2bd);
+  body.position.y = 0.48;
+  group.add(body);
+  [-0.72, 0.72].forEach((x) => {
+    const tower = cylinder(0.22, 1.55, 0xc6c0ae, 16);
+    tower.position.set(x, 0.86, 0.28);
+    group.add(tower);
+    const roof = cone(0.26, 0.55, 0x6e7f9f, 12);
+    roof.position.set(x, 1.9, 0.28);
+    group.add(roof);
+  });
+}
+
+function addBridge(group, suspension = false) {
+  const deck = box(3.2, 0.16, 0.22, suspension ? 0xe76f51 : 0xb99a7b);
+  deck.position.y = 0.54;
+  group.add(deck);
+  [-1.1, 1.1].forEach((x) => {
+    const tower = box(0.18, suspension ? 1.75 : 0.85, 0.18, suspension ? 0xe76f51 : 0xb99a7b);
+    tower.position.set(x, suspension ? 1.14 : 0.9, 0);
+    group.add(tower);
+  });
+  if (suspension) {
+    const cable = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.025, 6, 48, Math.PI), new THREE.MeshBasicMaterial({ color: 0xffb19d }));
+    cable.position.y = 1.62;
+    cable.rotation.z = Math.PI;
+    group.add(cable);
+  }
+}
+
+function addPyramids(group) {
+  [[-0.65, 0.75], [0.35, 1.05], [1.05, 0.52]].forEach(([x, s]) => {
+    const py = cone(s, s * 1.28, 0xd9b16f, 4);
+    py.position.set(x, (s * 1.28) / 2, 0);
+    py.rotation.y = Math.PI / 4;
+    group.add(py);
+  });
+}
+
+function addDesertOrSalt(group, salt = false) {
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(1.6, 44), new THREE.MeshStandardMaterial({ color: salt ? 0xe9f7ff : 0xd7a35c, roughness: salt ? 0.18 : 0.92 }));
+  ground.rotation.x = -Math.PI / 2;
+  group.add(ground);
+  if (salt) {
+    const mirror = cylinder(0.04, 1.1, 0x9bd8ff, 8);
+    mirror.position.y = 0.55;
+    group.add(mirror);
+  } else {
+    [-0.45, 0.35].forEach((x) => {
+      const dune = new THREE.Mesh(new THREE.SphereGeometry(0.78, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.48), new THREE.MeshStandardMaterial({ color: 0xcf9555, roughness: 0.9 }));
+      dune.scale.set(1.35, 0.38, 0.7);
+      dune.position.set(x, 0.1, 0);
+      group.add(dune);
+    });
+  }
+}
+
+function addWaterfall(group) {
+  const cliff = box(1.45, 1.5, 0.42, 0x5d6b59);
+  cliff.position.y = 0.78;
+  group.add(cliff);
+  const water = box(0.5, 1.42, 0.08, 0x72d7f2);
+  water.position.set(0.26, 0.76, 0.26);
+  group.add(water);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(1.0, 32), new THREE.MeshStandardMaterial({ color: 0x2bb8c8, roughness: 0.24 }));
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.y = 0.06;
+  group.add(pool);
+}
+
+function addMesa(group, item) {
+  const color = item.includes("大峽谷") ? 0xb56349 : item.includes("烏魯魯") ? 0xb65f3c : 0x6c7568;
+  const mesa = box(item.includes("桌山") ? 2.1 : 1.55, item.includes("大峽谷") ? 1.1 : 1.35, item.includes("桌山") ? 1.2 : 1.0, color);
+  mesa.position.y = 0.62;
+  group.add(mesa);
+  if (item.includes("大峽谷")) {
+    const cut = box(0.28, 0.9, 1.22, 0x5e3b32);
+    cut.position.set(0.12, 0.62, 0.04);
+    group.add(cut);
+  }
+}
+
+function addSavanna(group) {
+  const plain = new THREE.Mesh(new THREE.CircleGeometry(1.5, 34), new THREE.MeshStandardMaterial({ color: 0xb8b767, roughness: 0.8 }));
+  plain.rotation.x = -Math.PI / 2;
+  group.add(plain);
+  const tree = cylinder(0.06, 0.8, 0x7a5539, 8);
+  tree.position.y = 0.4;
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 12), new THREE.MeshStandardMaterial({ color: 0x7aa663 }));
+  crown.position.y = 0.92;
+  group.add(tree, crown);
+}
+
+function addLiberty(group) {
+  const base = box(0.72, 0.46, 0.72, 0x9b8e79);
+  base.position.y = 0.24;
+  const body = cone(0.38, 1.55, 0x75a99d, 12);
+  body.position.y = 1.0;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), new THREE.MeshStandardMaterial({ color: 0x88b6a9 }));
+  head.position.y = 1.82;
+  const torch = box(0.08, 1.0, 0.08, 0xffd76a);
+  torch.position.set(0.38, 1.78, 0);
+  torch.rotation.z = -0.32;
+  group.add(base, body, head, torch);
+}
+
+function addHalfDome(group) {
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.05, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.58), new THREE.MeshStandardMaterial({ color: 0x8d8b7a, roughness: 0.78 }));
+  dome.scale.set(1, 1.32, 0.72);
+  dome.position.y = 0.54;
+  group.add(dome);
+  const cliff = box(0.28, 1.1, 1.1, 0x6d6a61);
+  cliff.position.set(0.72, 0.56, 0);
+  group.add(cliff);
+}
+
+function addOldTown(group) {
+  for (let i = 0; i < 5; i += 1) {
+    const house = box(0.46, 0.45 + (i % 2) * 0.22, 0.42, [0xe0a46f, 0xd85f4f, 0xe8d4a4, 0x70a6a5, 0xc77f5b][i]);
+    house.position.set(-0.9 + i * 0.45, 0.28 + (i % 2) * 0.11, Math.sin(i) * 0.28);
+    group.add(house);
+  }
+}
+
+function addMachuPicchu(group) {
+  for (let i = 0; i < 5; i += 1) {
+    const terrace = box(2.2 - i * 0.35, 0.16, 1.2 - i * 0.12, 0x8aa06d);
+    terrace.position.y = 0.08 + i * 0.18;
+    group.add(terrace);
+  }
+  const ruin = box(0.55, 0.45, 0.38, 0x9f9b82);
+  ruin.position.set(0.4, 1.0, 0.1);
+  group.add(ruin);
+}
+
+function addChristStatue(group) {
+  const body = cylinder(0.18, 1.55, 0xe2e0d6, 16);
+  body.position.y = 0.86;
+  const arm = box(1.55, 0.12, 0.12, 0xe2e0d6);
+  arm.position.y = 1.38;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshStandardMaterial({ color: 0xe2e0d6 }));
+  head.position.y = 1.72;
+  group.add(body, arm, head);
+}
+
+function addSydneyOpera(group) {
+  for (let i = 0; i < 4; i += 1) {
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(0.58, 24, 12, 0, Math.PI, 0, Math.PI * 0.78), new THREE.MeshStandardMaterial({ color: 0xf5f1e5, roughness: 0.48 }));
+    shell.scale.set(0.72, 1.18 + i * 0.1, 0.26);
+    shell.position.set(-0.72 + i * 0.44, 0.58 + i * 0.06, 0);
+    shell.rotation.z = -0.45 + i * 0.18;
+    group.add(shell);
+  }
+  const base = box(2.1, 0.22, 0.9, 0xd8c8a8);
+  base.position.y = 0.12;
+  group.add(base);
+}
+
+function addFjord(group) {
+  const water = box(0.56, 0.08, 2.35, 0x2bb8c8);
+  water.position.y = 0.08;
+  const left = cone(0.78, 1.85, 0x596e5a, 5);
+  left.position.set(-0.62, 0.84, 0);
+  const right = cone(0.72, 1.6, 0x4d6554, 5);
+  right.position.set(0.62, 0.76, 0.15);
+  group.add(water, left, right);
+}
+
+function addMoai(group) {
+  const head = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.92, 8, 18), new THREE.MeshStandardMaterial({ color: 0x7f766a, roughness: 0.92 }));
+  head.position.y = 0.85;
+  head.scale.set(0.72, 1.08, 0.58);
+  const nose = box(0.08, 0.28, 0.08, 0x655e55);
+  nose.position.set(0, 0.94, 0.22);
+  group.add(head, nose);
+}
+
+function addIce(group, fjord = false) {
+  if (fjord) {
+    const water = box(0.5, 0.08, 2.0, 0x5bbde0);
+    water.position.y = 0.08;
+    group.add(water);
+  }
+  [-0.5, 0.15, 0.7].forEach((x, i) => {
+    const ice = cone(0.42 + i * 0.08, 1.05 + i * 0.22, 0xd8f4ff, 5);
+    ice.position.set(x, 0.52 + i * 0.09, Math.sin(i) * 0.4);
+    group.add(ice);
+  });
+}
+
+function addGenericByType(group, item) {
+  if (item.type === "city") return addNeedleTower(group, 3.2, 0x9fc7de);
+  if (item.type === "mountain") return addMountain(group, item.place);
+  if (item.type === "water") return addThermalPool(group);
+  if (item.type === "desert") return addDesertOrSalt(group);
+  if (item.type === "ice") return addIce(group);
+  if (item.type === "sacred") return addTajMahal(group);
+  addSavanna(group);
 }
 
 function makeLandmarkLabel(item, color) {
@@ -468,6 +913,113 @@ function makeLandmarkLabel(item, color) {
   sprite.userData = { isLandmarkLabel: true, place: item.place, floatBase: 7.8, floatPhase: Math.random() * Math.PI * 2 };
   labelSprites.push(sprite);
   return sprite;
+}
+
+function makePhotoCard(item, color) {
+  const cardCanvas = document.createElement("canvas");
+  cardCanvas.width = 640;
+  cardCanvas.height = 430;
+  const ctx = cardCanvas.getContext("2d");
+  drawPhotoCardPlaceholder(ctx, item, color, "載入真實參考圖...");
+
+  const texture = new THREE.CanvasTexture(cardCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0, depthTest: false }));
+  sprite.position.y = 13.2;
+  sprite.scale.set(11.4, 7.65, 1);
+  sprite.renderOrder = 29;
+  sprite.userData = { isPhotoCard: true, place: item.place, floatBase: 13.2, floatPhase: Math.random() * Math.PI * 2 };
+  photoSprites.push(sprite);
+  loadWikiPhoto(item, cardCanvas, ctx, texture, color);
+  return sprite;
+}
+
+async function loadWikiPhoto(item, cardCanvas, ctx, texture, color) {
+  try {
+    const endpoint = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(item.wikiTitle)}`;
+    const response = await fetch(endpoint, { headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const imageUrl = data.thumbnail?.source || data.originalimage?.source;
+    if (!imageUrl) throw new Error("No thumbnail");
+    const image = await loadCrossOriginImage(imageUrl.replace(/\/\d+px-/, "/640px-"));
+    drawPhotoCard(ctx, item, color, image);
+    texture.needsUpdate = true;
+  } catch (error) {
+    drawPhotoCardPlaceholder(ctx, item, color, "真實圖載入失敗，請稍後重整");
+    texture.needsUpdate = true;
+  }
+}
+
+function loadCrossOriginImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
+function drawPhotoCard(ctx, item, color, image) {
+  ctx.clearRect(0, 0, 640, 430);
+  ctx.fillStyle = "rgba(5, 13, 23, 0.9)";
+  roundRect(ctx, 20, 16, 600, 398, 26);
+  ctx.fill();
+  ctx.strokeStyle = `#${color.getHexString()}`;
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  const frame = { x: 42, y: 40, w: 556, h: 282 };
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, 18);
+  ctx.clip();
+  drawCoverImage(ctx, image, frame.x, frame.y, frame.w, frame.h);
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(5, 13, 23, 0.72)";
+  ctx.fillRect(42, 274, 556, 48);
+  ctx.fillStyle = "#f4f9ff";
+  ctx.font = '700 34px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(item.place, 320, 298, 512);
+  ctx.fillStyle = `#${color.getHexString()}`;
+  ctx.font = '700 22px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  ctx.fillText("Wikipedia / Wikimedia 真實參考圖", 320, 362, 520);
+}
+
+function drawPhotoCardPlaceholder(ctx, item, color, message) {
+  ctx.clearRect(0, 0, 640, 430);
+  ctx.fillStyle = "rgba(5, 13, 23, 0.9)";
+  roundRect(ctx, 20, 16, 600, 398, 26);
+  ctx.fill();
+  ctx.strokeStyle = `#${color.getHexString()}`;
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  const gradient = ctx.createLinearGradient(42, 40, 598, 322);
+  gradient.addColorStop(0, "rgba(80, 120, 160, 0.42)");
+  gradient.addColorStop(1, "rgba(20, 36, 56, 0.78)");
+  ctx.fillStyle = gradient;
+  roundRect(ctx, 42, 40, 556, 282, 18);
+  ctx.fill();
+  ctx.fillStyle = "#f4f9ff";
+  ctx.font = '700 36px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(item.place, 320, 170, 500);
+  ctx.fillStyle = `#${color.getHexString()}`;
+  ctx.font = '700 24px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  ctx.fillText(message, 320, 360, 520);
+}
+
+function drawCoverImage(ctx, image, x, y, width, height) {
+  const scale = Math.max(width / image.width, height / image.height);
+  const sw = width / scale;
+  const sh = height / scale;
+  const sx = (image.width - sw) / 2;
+  const sy = (image.height - sh) / 2;
+  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -662,6 +1214,16 @@ function updateLabels() {
     const near = camera.position.distanceTo(worldPosition) < LABEL_DISTANCE || selected?.place === label.userData.place;
     label.material.opacity = THREE.MathUtils.lerp(label.material.opacity, near ? 1 : 0, 0.12);
     label.position.y = label.userData.floatBase + Math.sin(clock.elapsedTime * 1.8 + label.userData.floatPhase) * 0.22;
+  });
+  photoSprites.forEach((card) => {
+    const parent = card.parent;
+    const worldPosition = new THREE.Vector3();
+    parent.getWorldPosition(worldPosition);
+    const distance = camera.position.distanceTo(worldPosition);
+    const selectedCard = selected?.place === card.userData.place;
+    const near = distance < 26 || selectedCard;
+    card.material.opacity = THREE.MathUtils.lerp(card.material.opacity, near ? 1 : 0, 0.1);
+    card.position.y = card.userData.floatBase + Math.sin(clock.elapsedTime * 1.25 + card.userData.floatPhase) * 0.18;
   });
 }
 
