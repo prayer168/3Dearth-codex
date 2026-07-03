@@ -3,25 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="台灣 3D 立體地景，以無人機視角自由飛越各縣市知名地標、山脈、海岸與城市。" />
+    <meta name="description" content="地球 3D 無人機巡視，沿著全球 50 個知名自然與人文地景飛行探索。" />
     <meta property="og:locale" content="zh_TW" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="台灣 3D 地景飛行" />
-    <meta property="og:title" content="台灣 3D 地景飛行" />
-    <meta property="og:description" content="用無人機視角探索台灣各縣市代表地景。" />
-    <title>台灣 3D 地景飛行</title>
+    <meta property="og:site_name" content="地球 3D 無人機地景巡視" />
+    <meta property="og:title" content="地球 3D 無人機地景巡視" />
+    <meta property="og:description" content="用無人機視角探索世界 50 個代表地景。" />
+    <title>地球 3D 無人機地景巡視</title>
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
-    <main class="flight-app nav-collapsed" aria-label="台灣 3D 地景飛行互動體驗">
-      <canvas id="taiwanScene" aria-label="台灣 3D 立體地景"></canvas>
+    <main class="flight-app nav-collapsed" aria-label="地球 3D 無人機地景巡視互動體驗">
+      <canvas id="earthScene" aria-label="地球 3D 立體地景"></canvas>
 
       <button id="navToggle" class="nav-toggle" type="button" aria-controls="cityPanel" aria-expanded="false" title="展開地景清單">☰</button>
 
-      <section class="hud action-panel" aria-label="地圖控制">
+      <section class="hud action-panel" aria-label="地球巡視控制">
         <button id="tourButton" type="button" title="自動巡航">▶ 自動巡航</button>
-        <button id="nightButton" type="button" title="切換環境模式">🔄 環境模式</button>
-        <button id="homeButton" type="button" title="返回全島鳥瞰">🏝 全島鳥瞰</button>
+        <button id="nightButton" type="button" title="切換日夜模式">◐ 日夜模式</button>
+        <button id="homeButton" type="button" title="返回地球鳥瞰">◎ 地球鳥瞰</button>
       </section>
 
       <section class="hud speed-panel" aria-label="飛行速度">
@@ -31,20 +31,21 @@
         </label>
       </section>
 
-      <section id="cityPanel" class="hud city-panel" aria-label="縣市地景列表">
-        <h2>📍 全縣市著名地景 <span id="landmarkCount">(22)</span></h2>
+      <section id="cityPanel" class="hud city-panel" aria-label="世界地景列表">
+        <h2>世界 50 個知名地景 <span id="landmarkCount">(50)</span></h2>
         <div id="cityList" class="city-list"></div>
       </section>
 
       <section class="hud flight-help" aria-label="操作提示">
-        <span>滑鼠拖曳：轉動視角</span>
+        <span>左鍵拖曳：轉動視角</span>
+        <span>右鍵拖曳：平移巡視</span>
         <span>滾輪：拉近拉遠</span>
-        <span>方向鍵：飛行</span>
+        <span>方向鍵 / WASD：飛行</span>
         <span>Q / E：升降</span>
         <span>點擊地景：查看位置</span>
       </section>
 
-      <div id="loadingState" class="loading-state">正在生成台灣立體地景...</div>
+      <div id="loadingState" class="loading-state">正在載入地球真實紋理與 50 個地景...</div>
     </main>
 
     <script src="./js/app.js" type="module"></script>

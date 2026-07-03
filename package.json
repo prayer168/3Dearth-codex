@@ -1,7 +1,7 @@
 {
-  "name": "taiwan-map-codex",
+  "name": "earth-drone-landmarks",
   "version": "1.0.0",
-  "description": "台灣 3D 立體地景與無人機視角互動導覽",
+  "description": "地球 3D 無人機巡視世界 50 個知名地景",
   "scripts": {
     "start": "vite --host 127.0.0.1",
     "build": "vite build",

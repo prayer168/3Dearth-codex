@@ -2,12 +2,12 @@
   color-scheme: dark;
   --ink: #f4f9ff;
   --muted: #b9c8d8;
-  --panel: rgba(19, 42, 63, 0.94);
-  --panel-strong: rgba(13, 32, 49, 0.98);
+  --panel: rgba(12, 24, 37, 0.9);
+  --panel-strong: rgba(7, 17, 29, 0.98);
   --line: rgba(225, 244, 255, 0.18);
-  --cyan: #46d9cf;
-  --blue: #5aa9ff;
-  --amber: #ffd45a;
+  --cyan: #4fe0cf;
+  --blue: #72b6ff;
+  --amber: #ffd76a;
   --rose: #ff6f9b;
   --shadow: 0 18px 38px rgba(2, 15, 26, 0.35);
   font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
@@ -21,12 +21,14 @@ html,
 body {
   width: 100%;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   color: var(--ink);
-  background: #54bff0;
+  background: #050b14;
   overflow: hidden;
 }
 
@@ -62,17 +64,17 @@ input:focus-visible {
   overflow: hidden;
 }
 
-#taiwanScene {
+#earthScene {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  background: #4eb9ee;
+  background: #050b14;
   cursor: grab;
 }
 
-#taiwanScene:active {
+#earthScene:active {
   cursor: grabbing;
 }
 
@@ -80,7 +82,7 @@ input:focus-visible {
   position: absolute;
   z-index: 2;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
@@ -95,7 +97,7 @@ input:focus-visible {
   min-height: 48px;
   padding: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--panel-strong);
   color: var(--ink);
   font-size: 1.45rem;
@@ -106,7 +108,7 @@ input:focus-visible {
 .city-panel {
   left: 14px;
   top: 14px;
-  width: min(236px, calc(100vw - 28px));
+  width: min(292px, calc(100vw - 28px));
   max-height: calc(100vh - 28px);
   padding: 0.85rem;
   overflow: hidden;
@@ -131,15 +133,14 @@ input:focus-visible {
   left: 14px;
 }
 
-.city-panel + .nav-toggle,
 .nav-toggle[aria-expanded="true"] {
-  left: 264px;
+  left: 320px;
 }
 
 .city-panel h2 {
   margin: 0 0 0.75rem;
   color: var(--amber);
-  font-size: 1rem;
+  font-size: 0.96rem;
   line-height: 1.2;
 }
 
@@ -158,10 +159,10 @@ input:focus-visible {
 
 .city-button {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr);
   align-items: center;
   gap: 0.52rem;
-  min-height: 32px;
+  min-height: 36px;
   width: 100%;
   padding: 0.18rem 0.26rem;
   border: 0;
@@ -179,13 +180,13 @@ input:focus-visible {
 .county-chip {
   display: inline-grid;
   place-items: center;
-  min-width: 46px;
+  min-width: 66px;
   min-height: 22px;
   padding: 0 0.34rem;
   border-radius: 5px;
   color: #dfeaf5;
   background: rgba(148, 182, 210, 0.22);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -193,7 +194,7 @@ input:focus-visible {
 .place-name {
   min-width: 0;
   color: var(--ink);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,20 +202,19 @@ input:focus-visible {
 }
 
 .action-panel {
-  right: 14px;
-  top: 14px;
-  display: grid;
-  gap: 0.65rem;
-  width: 128px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  backdrop-filter: none;
+  left: 50%;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  width: min(520px, calc(100vw - 420px));
+  min-width: 420px;
+  padding: 0.48rem;
+  transform: translateX(-50%);
 }
 
 .action-panel button {
-  width: 100%;
+  flex: 1 1 0;
   white-space: nowrap;
 }
 
@@ -226,8 +226,8 @@ input:focus-visible {
 
 .speed-panel {
   right: 14px;
-  top: 194px;
-  width: 128px;
+  bottom: 20px;
+  width: 164px;
   padding: 0.72rem 0.84rem;
 }
 
@@ -245,21 +245,23 @@ input:focus-visible {
 
 input[type="range"] {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   accent-color: var(--cyan);
 }
 
 .flight-help {
   left: 50%;
-  bottom: 28px;
+  bottom: 84px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.45rem 0.8rem;
-  width: min(760px, calc(100vw - 520px));
-  min-width: 420px;
+  width: min(800px, calc(100vw - 420px));
+  min-width: 470px;
   padding: 0.45rem 1rem;
   transform: translateX(-50%);
-  border-radius: 999px;
+  border-radius: 8px;
 }
 
 .flight-help span {
@@ -296,6 +298,7 @@ input[type="range"] {
 @media (max-width: 980px) {
   body {
     overflow: auto;
+    overflow-x: hidden;
   }
 
   .flight-app {
@@ -303,19 +306,21 @@ input[type="range"] {
     grid-template-columns: 1fr;
     align-content: start;
     gap: 0.7rem;
+    width: 100%;
     min-height: 100svh;
     height: auto;
     padding: 12px;
+    overflow-x: hidden;
   }
 
-  #taiwanScene {
+  #earthScene {
     position: relative;
     inset: auto;
     order: 1;
-    height: min(52svh, 440px);
+    height: min(58svh, 520px);
     min-height: 300px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 8px;
   }
 
   .hud,
@@ -361,6 +366,7 @@ input[type="range"] {
   .action-panel {
     order: 3;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: grid;
   }
 
   .speed-panel {
@@ -369,7 +375,7 @@ input[type="range"] {
 
   .flight-help {
     order: 5;
-    border-radius: 14px;
+    border-radius: 8px;
   }
 
   .nav-collapsed .city-panel {
