@@ -244,6 +244,61 @@ function cone(r, h, color) {
   return mesh;
 }
 
+function makeLandmarkLabel(item, color) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const width = 512;
+  const height = 192;
+  canvas.width = width;
+  canvas.height = height;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "rgba(7, 17, 29, 0.82)";
+  roundRect(context, 20, 24, width - 40, height - 48, 28);
+  context.fill();
+  context.strokeStyle = `#${color.getHexString()}`;
+  context.lineWidth = 5;
+  context.stroke();
+  context.fillStyle = "#f4f7fb";
+  context.font = '700 48px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(item.place, width / 2, 82, width - 74);
+  context.fillStyle = `#${color.getHexString()}`;
+  context.font = '700 28px "Microsoft JhengHei", "Noto Sans TC", sans-serif';
+  context.fillText(item.county, width / 2, 132, width - 74);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false
+  }));
+  sprite.position.y = 12;
+  sprite.scale.set(11.2, 4.2, 1);
+  sprite.renderOrder = 20;
+  sprite.userData = {
+    isLandmarkLabel: true,
+    floatBase: sprite.position.y,
+    floatPhase: Math.random() * Math.PI * 2
+  };
+  return sprite;
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
 function addLandmarkModel(item) {
   const group = new THREE.Group();
   group.position.set(item.x, 2.5, item.z);
@@ -359,6 +414,7 @@ function addLandmarkModel(item) {
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 8, 8), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55 }));
   beam.position.y = 4;
   group.add(beam);
+  group.add(makeLandmarkLabel(item, color));
 
   root.add(group);
   landmarkObjects.set(item.county, group);
@@ -485,6 +541,9 @@ function animate() {
   controls.update();
   root.traverse((object) => {
     if (object.userData?.place) object.rotation.y += delta * 0.5;
+    if (object.userData?.isLandmarkLabel) {
+      object.position.y = object.userData.floatBase + Math.sin(clock.elapsedTime * 1.7 + object.userData.floatPhase) * 0.28;
+    }
   });
   ui.altitudeValue.textContent = `${Math.max(0, Math.round(camera.position.y * 95)).toLocaleString()} m`;
   renderer.render(scene, camera);
