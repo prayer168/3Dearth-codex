@@ -9,8 +9,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07111d);
-scene.fog = new THREE.FogExp2(0x07111d, 0.008);
+scene.background = new THREE.Color(0x61c7f2);
+scene.fog = new THREE.FogExp2(0x61c7f2, 0.005);
 
 const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
 camera.position.set(0, 52, 118);
@@ -28,11 +28,8 @@ scene.add(root);
 
 const ui = {
   loading: document.querySelector("#loadingState"),
-  landmarkSelect: document.querySelector("#landmarkSelect"),
-  regionFilter: document.querySelector("#regionFilter"),
-  focusName: document.querySelector("#focusName"),
-  altitudeValue: document.querySelector("#altitudeValue"),
-  speedValue: document.querySelector("#speedValue"),
+  cityList: document.querySelector("#cityList"),
+  landmarkCount: document.querySelector("#landmarkCount"),
   speedRange: document.querySelector("#speedRange"),
   tourButton: document.querySelector("#tourButton"),
   homeButton: document.querySelector("#homeButton"),
@@ -48,31 +45,33 @@ const palette = {
 };
 
 const landmarks = [
-  { county: "基隆市", region: "north", place: "正濱漁港", x: 8, z: -43, model: "harbor", note: "彩色屋岸線與港灣燈塔，標記北台灣海門。" },
+  { county: "基隆市", region: "north", place: "基隆港", x: 8, z: -43, model: "harbor", note: "北台灣海門與大型港灣地景。" },
   { county: "臺北市", region: "north", place: "台北 101", x: 1, z: -38, model: "tower101", note: "以摩天樓群呈現信義天際線，是北部最醒目的城市地標。" },
   { county: "新北市", region: "north", place: "野柳女王頭", x: 11, z: -37, model: "rock", note: "海蝕地形與岬角步道，適合觀察東北角海岸。" },
-  { county: "桃園市", region: "north", place: "大溪老街", x: -8, z: -34, model: "street", note: "街屋牌樓與河階地形，連接北部丘陵與台地。" },
-  { county: "新竹縣市", region: "north", place: "新竹城隍廟", x: -15, z: -27, model: "temple", note: "廟埕與城區模型代表風城生活圈。" },
+  { county: "桃園市", region: "north", place: "桃園國際機場", x: -8, z: -34, model: "street", note: "國門機場與桃園台地上的重要交通地標。" },
+  { county: "新竹市", region: "north", place: "新竹科學園區", x: -14, z: -28, model: "opera", note: "科技產業聚落，代表風城的創新能量。" },
+  { county: "新竹縣", region: "north", place: "司馬庫斯神木群", x: -8, z: -25, model: "temple", note: "高山部落與巨木森林，呈現新竹山區地景。" },
   { county: "苗栗縣", region: "central", place: "龍騰斷橋", x: -18, z: -18, model: "bridge", note: "磚拱橋與丘陵地貌，呈現鐵道與地震地景。" },
-  { county: "臺中市", region: "central", place: "臺中國家歌劇院", x: -15, z: -8, model: "opera", note: "曲牆建築與都會軸線，位於中部盆地核心。" },
+  { county: "臺中市", region: "central", place: "高美濕地", x: -17, z: -8, model: "opera", note: "潮間帶、風車與夕照，是台中海岸代表景觀。" },
   { county: "彰化縣", region: "central", place: "八卦山大佛", x: -21, z: 1, model: "buddha", note: "山丘上的大佛與扇形平原，俯瞰西部聚落。" },
   { county: "南投縣", region: "central", place: "日月潭", x: -2, z: 4, model: "lake", note: "內陸湖泊與環湖山勢，標示台灣中心地景。" },
   { county: "雲林縣", region: "central", place: "北港朝天宮", x: -20, z: 14, model: "temple", note: "媽祖信仰重鎮，與濁水溪沖積平原相鄰。" },
-  { county: "嘉義縣市", region: "south", place: "阿里山森林鐵路", x: -10, z: 21, model: "rail", note: "山林鐵道爬升到雲海茶園，是高山旅遊入口。" },
+  { county: "嘉義縣", region: "south", place: "阿里山", x: -10, z: 21, model: "rail", note: "山林鐵道爬升到雲海茶園，是高山旅遊入口。" },
+  { county: "嘉義市", region: "south", place: "射日塔", x: -18, z: 23, model: "tower101", note: "嘉義市區的高塔地標，連結都市與阿里山門戶意象。" },
   { county: "臺南市", region: "south", place: "赤崁樓", x: -21, z: 31, model: "fort", note: "古城牆與府城街廓，呈現台灣早期城市記憶。" },
-  { county: "高雄市", region: "south", place: "龍虎塔與港灣", x: -15, z: 43, model: "pagoda", note: "蓮池潭塔樓與港口起重機，連結工業城市與觀光湖景。" },
-  { county: "屏東縣", region: "south", place: "墾丁鵝鑾鼻", x: -4, z: 59, model: "lighthouse", note: "南端燈塔、珊瑚礁台地與海角，是飛行路線的終點。" },
+  { county: "高雄市", region: "south", place: "高雄85大樓", x: -15, z: 43, model: "tower101", note: "港都天際線與亞洲新灣區的高樓地標。" },
+  { county: "屏東縣", region: "south", place: "鵝鑾鼻燈塔", x: -4, z: 59, model: "lighthouse", note: "南端燈塔、珊瑚礁台地與海角，是飛行路線的終點。" },
   { county: "宜蘭縣", region: "east", place: "龜山島海岸", x: 16, z: -24, model: "island", note: "沖積平原外的火山島，標記蘭陽海岸視野。" },
   { county: "花蓮縣", region: "east", place: "太魯閣峽谷", x: 16, z: 5, model: "gorge", note: "大理岩峽谷切穿中央山脈，是東部最具張力的地景。" },
-  { county: "臺東縣", region: "east", place: "三仙台", x: 15, z: 38, model: "arch", note: "跨海拱橋與礫石海岸，沿著縱谷南行可抵達。" },
+  { county: "臺東縣", region: "east", place: "鹿野高台熱氣球", x: 15, z: 38, model: "arch", note: "縱谷熱氣球與高台視野，代表臺東開闊地景。" },
   { county: "澎湖縣", region: "islands", place: "雙心石滬", x: -52, z: 22, model: "fishtrap", note: "玄武岩海岸旁的潮間帶石滬，位於台灣海峽。" },
   { county: "金門縣", region: "islands", place: "莒光樓", x: -72, z: 2, model: "gate", note: "城樓與閩南聚落，放在西側離島群作為空拍節點。" },
-  { county: "連江縣", region: "islands", place: "芹壁聚落", x: -58, z: -48, model: "village", note: "石屋聚落與海灣坡地，標示馬祖列島。" },
-  { county: "綠島", region: "islands", place: "朝日溫泉", x: 35, z: 39, model: "spring", note: "海岸溫泉與環島公路，是東南外海亮點。" },
-  { county: "蘭嶼", region: "islands", place: "拼板舟海岸", x: 43, z: 54, model: "canoe", note: "達悟文化與火山島地形，位於台灣東南方。" }
+  { county: "連江縣", region: "islands", place: "芹壁聚落", x: -58, z: -48, model: "village", note: "石屋聚落與海灣坡地，標示馬祖列島。" }
 ];
 
 const landmarkObjects = new Map();
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 const keyState = new Set();
 let selected = null;
 let autoTour = false;
@@ -80,18 +79,19 @@ let tourIndex = 0;
 let tourClock = 0;
 let isNight = false;
 let speedMultiplier = 1;
+let pointerStart = null;
 const cameraGoal = {
   position: camera.position.clone(),
   target: controls.target.clone()
 };
 
 const landMaterial = new THREE.MeshStandardMaterial({
-  color: 0x2f8f60,
+  color: 0x9ef28c,
   roughness: 0.82,
   metalness: 0.03
 });
-const mountainMaterial = new THREE.MeshStandardMaterial({ color: 0x486b48, roughness: 0.9 });
-const coastMaterial = new THREE.MeshStandardMaterial({ color: 0xf1d38c, roughness: 0.72 });
+const mountainMaterial = new THREE.MeshStandardMaterial({ color: 0x5fbf65, roughness: 0.9 });
+const coastMaterial = new THREE.MeshStandardMaterial({ color: 0xffe18a, roughness: 0.72 });
 const cityMaterial = new THREE.MeshStandardMaterial({ color: 0xd9e7f5, roughness: 0.45, metalness: 0.12 });
 const glowMaterial = new THREE.MeshBasicMaterial({ color: 0x8ff8e8, transparent: true, opacity: 0.35 });
 
@@ -104,7 +104,7 @@ sun.shadow.camera.right = 90;
 sun.shadow.camera.top = 90;
 sun.shadow.camera.bottom = -90;
 scene.add(sun);
-scene.add(new THREE.HemisphereLight(0x9fd5ff, 0x173015, 1.7));
+scene.add(new THREE.HemisphereLight(0xdaf7ff, 0x7fcf69, 2.3));
 
 function makeTaiwanShape(scale = 1) {
   const pts = [
@@ -136,7 +136,7 @@ function makeIsland(x, z, radius, color = 0x3d9566) {
 function buildBaseMap() {
   const ocean = new THREE.Mesh(
     new THREE.CircleGeometry(190, 96),
-    new THREE.MeshStandardMaterial({ color: 0x0b3e5f, roughness: 0.62, metalness: 0.08 })
+    new THREE.MeshStandardMaterial({ color: 0x26a9e9, roughness: 0.62, metalness: 0.08 })
   );
   ocean.rotation.x = -Math.PI / 2;
   ocean.position.y = -1.15;
@@ -417,20 +417,24 @@ function addLandmarkModel(item) {
 }
 
 function renderCityList() {
-  const filter = ui.regionFilter.value;
-  const options = landmarks.filter((item) => filter === "all" || item.region === filter);
-  ui.landmarkSelect.innerHTML = '<option value="">請選擇縣市地標</option>';
-  options.forEach((item) => {
-    const option = document.createElement("option");
-    option.value = item.county;
-    option.textContent = `${item.county}｜${item.place}`;
-    ui.landmarkSelect.append(option);
+  ui.landmarkCount.textContent = `(${landmarks.length})`;
+  ui.cityList.innerHTML = "";
+  landmarks.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "city-button";
+    button.dataset.county = item.county;
+    button.innerHTML = `<span class="county-chip">${item.county}</span><span class="place-name">${item.place}</span>`;
+    button.addEventListener("click", () => focusLandmark(item));
+    ui.cityList.append(button);
   });
   updateActiveCity();
 }
 
 function updateActiveCity() {
-  ui.landmarkSelect.value = selected?.county || "";
+  document.querySelectorAll(".city-button").forEach((button) => {
+    button.classList.toggle("active", selected?.county === button.dataset.county);
+  });
 }
 
 function focusLandmark(item) {
@@ -442,7 +446,6 @@ function focusLandmark(item) {
   const offset = new THREE.Vector3(item.x > 0 ? 17 : -17, 18, item.z > 12 ? 24 : -24);
   cameraGoal.target.copy(target);
   cameraGoal.position.copy(target).add(offset);
-  ui.focusName.textContent = item.county;
   updateActiveCity();
 }
 
@@ -457,14 +460,13 @@ function goHome() {
   cameraGoal.target.set(0, 0, 5);
   camera.position.copy(cameraGoal.position);
   controls.target.copy(cameraGoal.target);
-  ui.focusName.textContent = "自由飛行";
   updateActiveCity();
 }
 
 function toggleNight() {
   isNight = !isNight;
-  scene.background.set(isNight ? 0x030711 : 0x07111d);
-  scene.fog.color.set(isNight ? 0x030711 : 0x07111d);
+  scene.background.set(isNight ? 0x113a64 : 0x61c7f2);
+  scene.fog.color.set(isNight ? 0x113a64 : 0x61c7f2);
   sun.intensity = isNight ? 0.55 : 3.2;
   ui.nightButton.classList.toggle("active", isNight);
 }
@@ -512,6 +514,29 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
+function findLandmarkFromObject(object) {
+  let current = object;
+  while (current) {
+    if (current.userData?.county) return current.userData;
+    current = current.parent;
+  }
+  return null;
+}
+
+function pickLandmark(event) {
+  if (!pointerStart) return;
+  const moved = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
+  pointerStart = null;
+  if (moved > 6) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects([...landmarkObjects.values()], true);
+  const item = hits.map((hit) => findLandmarkFromObject(hit.object)).find(Boolean);
+  if (item) focusLandmark(item);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(0.05, clock.getDelta());
@@ -526,7 +551,6 @@ function animate() {
       object.position.y = object.userData.floatBase + Math.sin(clock.elapsedTime * 1.7 + object.userData.floatPhase) * 0.28;
     }
   });
-  ui.altitudeValue.textContent = `${Math.max(0, Math.round(camera.position.y * 95)).toLocaleString()} m`;
   renderer.render(scene, camera);
 }
 
@@ -535,11 +559,6 @@ landmarks.forEach(addLandmarkModel);
 renderCityList();
 goHome();
 
-ui.regionFilter.addEventListener("change", renderCityList);
-ui.landmarkSelect.addEventListener("change", () => {
-  const item = landmarks.find((landmark) => landmark.county === ui.landmarkSelect.value);
-  if (item) focusLandmark(item);
-});
 ui.homeButton.addEventListener("click", goHome);
 ui.nightButton.addEventListener("click", toggleNight);
 ui.tourButton.addEventListener("click", () => {
@@ -551,7 +570,6 @@ ui.tourButton.addEventListener("click", () => {
 });
 ui.speedRange.addEventListener("input", () => {
   speedMultiplier = Number(ui.speedRange.value);
-  ui.speedValue.textContent = `${speedMultiplier.toFixed(1)}x`;
 });
 
 window.addEventListener("keydown", (event) => {
@@ -563,10 +581,12 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => keyState.delete(event.code));
 window.addEventListener("resize", resize);
 new ResizeObserver(resize).observe(canvas);
-renderer.domElement.addEventListener("pointerdown", () => {
+renderer.domElement.addEventListener("pointerdown", (event) => {
+  pointerStart = { x: event.clientX, y: event.clientY };
   autoTour = false;
   ui.tourButton.classList.remove("active");
 });
+renderer.domElement.addEventListener("pointerup", pickLandmark);
 
 const clock = new THREE.Clock();
 resize();

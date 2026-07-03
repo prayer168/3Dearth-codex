@@ -16,49 +16,30 @@
     <main class="flight-app" aria-label="台灣 3D 地景飛行互動體驗">
       <canvas id="taiwanScene" aria-label="台灣 3D 立體地景"></canvas>
 
-      <section class="hud drone-console" aria-label="無人機控制台">
-        <div class="status-grid">
-          <div>
-            <span>目前焦點</span>
-            <strong id="focusName">自由飛行</strong>
-          </div>
-          <div>
-            <span>高度</span>
-            <strong id="altitudeValue">0 m</strong>
-          </div>
-          <div>
-            <span>速度</span>
-            <strong id="speedValue">1.0x</strong>
-          </div>
-        </div>
-        <div class="control-row">
-          <button id="tourButton" type="button" title="自動巡航">巡航</button>
-          <button id="homeButton" type="button" title="返回全台視角">全台</button>
-          <button id="nightButton" type="button" title="切換日夜光線">日夜</button>
-        </div>
+      <section class="hud action-panel" aria-label="地圖控制">
+        <button id="tourButton" type="button" title="自動巡航">▶ 自動巡航</button>
+        <button id="nightButton" type="button" title="切換環境模式">🔄 環境模式</button>
+        <button id="homeButton" type="button" title="返回全島鳥瞰">🏝 全島鳥瞰</button>
+      </section>
+
+      <section class="hud speed-panel" aria-label="飛行速度">
         <label class="range-control" for="speedRange">
           <span>飛行速度</span>
           <input id="speedRange" type="range" min="0.4" max="2.4" value="1" step="0.1" />
         </label>
-        <p class="hint">滑鼠拖曳環視，滾輪升降；方向鍵平移，Q/E 調整高度。</p>
       </section>
 
       <section class="hud city-panel" aria-label="縣市地景列表">
-        <div class="panel-head">
-          <h2>縣市地景</h2>
-          <select id="regionFilter" aria-label="篩選區域">
-            <option value="all">全台</option>
-            <option value="north">北部</option>
-            <option value="central">中部</option>
-            <option value="south">南部</option>
-            <option value="east">東部</option>
-            <option value="islands">離島</option>
-          </select>
-        </div>
-        <label class="landmark-picker" for="landmarkSelect">
-          <span>選擇地標</span>
-          <select id="landmarkSelect" aria-label="選擇縣市地景"></select>
-        </label>
+        <h2>📍 全縣市著名地景 <span id="landmarkCount">(22)</span></h2>
+        <div id="cityList" class="city-list"></div>
+      </section>
+
+      <section class="hud flight-help" aria-label="操作提示">
+        <span>滑鼠拖曳：轉動視角</span>
+        <span>方向鍵：飛行</span>
+        <span>Q / E：升降</span>
+        <span>滾輪：前進後退</span>
+        <span>點擊地景：查看位置</span>
       </section>
 
       <div id="loadingState" class="loading-state">正在生成台灣立體地景...</div>
